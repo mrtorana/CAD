@@ -36,7 +36,7 @@
   .miss .btn{margin-top:10px}
 
   #fields{position:absolute;inset:0}
-  .field{position:absolute;white-space:pre-wrap;word-break:break-word;overflow:hidden;line-height:1.3;padding:.25% .35%;outline:none}
+  .field{position:absolute;white-space:pre-wrap;word-break:break-word;overflow:hidden;line-height:1.3;outline:none}
   .field.testo{cursor:text;border:1px dashed transparent}
   .field.testo:hover{border-color:#999}
   .field.testo:focus{border:1px solid #111;background:rgba(0,0,0,.03)}
@@ -101,22 +101,22 @@
    SCHEMA FISSO — da raccomandata-schema.csv (fronte/retro invertiti)
    ══════════════════════════════════════════════════════════════ */
 const CAMPI_FISSI=[
-  /* ── FRONTE (ex campi "retro") ── */
+  /* ── FRONTE ── */
   {page:'fronte', x:.1931,y:.2145,w:.3780,h:.0540, name:'Numero',              fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
-  {page:'fronte', x:.0460,y:.2589,w:.0310,h:.0510, name:'Cifra 1',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
-  {page:'fronte', x:.0872,y:.2592,w:.0330,h:.0510, name:'Cifra 2',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
-  {page:'fronte', x:.1284,y:.2592,w:.0600,h:.0510, name:'Cifre 3',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.0460,y:.2589,w:.0310,h:.0510, name:'00',                  fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.0872,y:.2592,w:.0330,h:.0510, name:'00',                  fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.1284,y:.2592,w:.0600,h:.0510, name:'0000',                fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
   {page:'fronte', x:.1566,y:.3652,w:.4218,h:.0600, name:'Destinatario',        fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
   {page:'fronte', x:.1548,y:.4306,w:.4236,h:.0532, name:'Indirizzo',           fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
   {page:'fronte', x:.2076,y:.4961,w:.3709,h:.0532, name:'CAP',                 fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
-  {page:'fronte', x:.0992,y:.6271,w:.0310,h:.0510, name:'Cifra 4',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
-  {page:'fronte', x:.1376,y:.6260,w:.0330,h:.0510, name:'Cifra 5',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
-  {page:'fronte', x:.1807,y:.6273,w:.0600,h:.0510, name:'Cifre 6',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.0992,y:.6271,w:.0310,h:.0510, name:'00',                  fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.1376,y:.6260,w:.0330,h:.0510, name:'00',                  fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.1807,y:.6273,w:.0600,h:.0510, name:'0000',                fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
   {page:'fronte', x:.0466,y:.8247,w:.0227,h:.0368, name:'Spunta 1',            type:'spunta', box:0, mark:'v'},
   {page:'fronte', x:.0430,y:.8861,w:.0245,h:.0368, name:'Spunta 2',            type:'spunta', box:0, mark:'v'},
   {page:'fronte', x:.3976,y:.7565,w:.5691,h:.0655, name:'Firma del ricevente', fontPt:17, align:'center', multi:1, bold:0, type:'testo'},
   {page:'fronte', x:.3930,y:.8888,w:.5709,h:.0559, name:"Firma dell'addetto",  fontPt:17, align:'center', multi:1, bold:0, type:'testo'},
-  /* ── RETRO (ex campi "fronte") ── */
+  /* ── RETRO ── */
   {page:'retro',  x:.3294,y:.5356,w:.5000,h:.0668, name:'Riga 1',              fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
   {page:'retro',  x:.3280,y:.6133,w:.5000,h:.0668, name:'Riga 2',              fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
   {page:'retro',  x:.3285,y:.6883,w:.5000,h:.0668, name:'Riga 3',              fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
@@ -126,6 +126,7 @@ const CAMPI_FISSI=[
 ];
 
 const MM2PT=72/25.4, PAGE_W_MM=300, PAGE_H_MM=200, PAGE_H_PT=PAGE_H_MM*MM2PT;
+const PAD_MM=0.6;               /* margine interno UNICO: stesso valore a schermo e nel PDF */
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const $=id=>document.getElementById(id);
 const SVG_V='<svg viewBox="0 0 100 100"><path d="M16 55 L40 79 L84 22" fill="none" stroke="currentColor" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -136,6 +137,7 @@ let uid=1;
 const state={page:'fronte',fields:{fronte:[],retro:[]}};
 const sheet=$('sheet'),fieldsL=$('fields'),sheetImg=$('sheetImg'),alignbar=$('alignbar');
 const find=id=>[...state.fields.fronte,...state.fields.retro].find(f=>f.id===id);
+const mmToPx=mm=>mm*(sheet.clientHeight/PAGE_H_MM);
 
 /* ── immagini: carico fronte.png / retro.png dalla stessa cartella ── */
 function registerImage(key,img){
@@ -189,7 +191,10 @@ function place(el,f){el.style.left=f.x*100+'%';el.style.top=f.y*100+'%';el.style
 function fontPx(f){return f.fontPt*(sheet.clientHeight/PAGE_H_PT);}
 function styleField(el,f){
   if(f.type==='spunta')return;
-  el.style.fontSize=fontPx(f)+'px';el.style.fontWeight=f.bold?700:400;el.style.textAlign=f.align;
+  el.style.fontSize=fontPx(f)+'px';
+  el.style.fontWeight=f.bold?700:400;
+  el.style.textAlign=f.align;
+  el.style.padding=mmToPx(PAD_MM)+'px';   /* stesso margine del PDF */
 }
 function buildField(f){
   const el=document.createElement('div');
@@ -250,7 +255,7 @@ fieldsL.addEventListener('focusin',e=>{
 fieldsL.addEventListener('focusout',()=>{
   setTimeout(()=>{if(!fieldsL.contains(document.activeElement))hideAlignBar();},0);
 });
-alignbar.addEventListener('pointerdown',e=>e.preventDefault()); // non perde il focus
+alignbar.addEventListener('pointerdown',e=>e.preventDefault());
 alignbar.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
   const f=find(alignbar.dataset.id);if(!f)return;
@@ -316,17 +321,23 @@ function drawField(doc,f){
   const text=String(f.value||'').trim();
   if(!text)return;
   doc.setFont('helvetica',f.bold?'bold':'normal');doc.setFontSize(f.fontPt);
-  const mmPt=25.4/72,lineH=f.fontPt*1.35*mmPt,pad=0.8;
+  const em=f.fontPt*25.4/72;            /* altezza del font in mm */
+  const lineH=em*1.3;                   /* come il line-height CSS (1.3) */
+  const pad=PAD_MM;                     /* stesso margine dello schermo */
   const lines=f.multi?wrapText(doc,text,W-2*pad):[text.split(/\r?\n/)[0]];
-  let y=Y+pad+f.fontPt*mmPt*0.85;
+  let y=Y+pad+em*0.95;                  /* baseline 1ª riga: margine + half-leading + ascent */
   for(const ln of lines){
-    if(y>Y+H-0.6)break;
+    if(y>Y+H-pad)break;
     let x=X+pad,opts={};
     if(f.align==='center'){x=X+W/2;opts.align='center';}
     else if(f.align==='right'){x=X+W-pad;opts.align='right';}
     doc.text(ln,x,y,opts);
     y+=lineH;
   }
+}
+function fieldValue(name){
+  const f=[...state.fields.fronte,...state.fields.retro].find(x=>x.name===name);
+  return f?String(f.value||'').trim():'';
 }
 $('btnPdf').onclick=()=>{
   if(typeof window.jspdf==='undefined'){toast('jsPDF non caricato: controlla la connessione','err');return;}
@@ -343,15 +354,18 @@ $('btnPdf').onclick=()=>{
     doc.setTextColor(0);
     for(const f of state.fields[p])drawField(doc,f);
   });
-  doc.save('raccomandata-'+new Date().toISOString().slice(0,10)+'.pdf');
-  toast('PDF generato: 2 pagine');
+  /* nome file: raccomandata-[Numero]-[Destinatario].pdf */
+  const clean=s=>s.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim();
+  const parts=[clean(fieldValue('Numero')),clean(fieldValue('Destinatario'))].filter(Boolean);
+  const fname='raccomandata'+(parts.length?'-'+parts.join('-'):'')+'.pdf';
+  doc.save(fname);
+  toast('PDF generato: '+fname);
 };
 
 /* ── avvio ── */
 for(const c of CAMPI_FISSI){
   const p=c.page==='retro'?'retro':'fronte';
-  const f={...c,id:'f'+(uid++),value:c.type==='spunta'?0:''};
-  state.fields[p].push(f);
+  state.fields[p].push({...c,id:'f'+(uid++),value:c.type==='spunta'?0:''});
 }
 new ResizeObserver(()=>{
   fieldsL.querySelectorAll('.field').forEach(el=>{
