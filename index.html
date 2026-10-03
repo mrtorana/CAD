@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Compilatore Raccomandata</title>
+<title>Compilatore CAD</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{--ink:#111;--mut:#6b6b6b;--line:#d9d9d9;--bg:#f4f4f4}
@@ -65,7 +65,7 @@
 <body>
 
 <header>
-  <h1>Compilatore Raccomandata</h1>
+  <h1>Compilatore CAD</h1>
   <div class="seg">
     <button id="tFronte" class="on" type="button">Fronte</button>
     <button id="tRetro" type="button">Retro</button>
@@ -354,10 +354,10 @@ $('btnPdf').onclick=()=>{
     doc.setTextColor(0);
     for(const f of state.fields[p])drawField(doc,f);
   });
-  /* nome file: raccomandata-[Numero]-[Destinatario].pdf */
+  /* nome file: CAD-[Numero]-[Destinatario].pdf */
   const clean=s=>s.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim();
   const parts=[clean(fieldValue('Numero')),clean(fieldValue('Destinatario'))].filter(Boolean);
-  const fname='raccomandata'+(parts.length?'-'+parts.join('-'):'')+'.pdf';
+  const fname='CAD'+(parts.length?'-'+parts.join('-'):'')+'.pdf';
   doc.save(fname);
   toast('PDF generato: '+fname);
 };
