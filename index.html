@@ -354,10 +354,10 @@ $('btnPdf').onclick=()=>{
     doc.setTextColor(0);
     for(const f of state.fields[p])drawField(doc,f);
   });
-  /* nome file: CAD-[Numero]-[Destinatario].pdf */
+  /* nome file: solo Numero-Destinatario.pdf */
   const clean=s=>s.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim();
   const parts=[clean(fieldValue('Numero')),clean(fieldValue('Destinatario'))].filter(Boolean);
-  const fname='CAD'+(parts.length?'-'+parts.join('-'):'')+'.pdf';
+  const fname=(parts.length?parts.join('-'):'documento')+'.pdf';
   doc.save(fname);
   toast('PDF generato: '+fname);
 };
