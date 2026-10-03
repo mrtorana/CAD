@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compilatore Raccomandata</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{--ink:#111;--mut:#6b6b6b;--line:#d9d9d9;--bg:#f4f4f4}
+  *{margin:0;padding:0;box-sizing:border-box}
+  [hidden]{display:none !important}
+  body{font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+
+  header{background:#fff;border-bottom:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  h1{font-size:16px;font-weight:700}
+  header .primary{margin-left:auto}
+
+  .btn{background:#fff;border:1px solid #bbb;border-radius:5px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:background .12s;color:var(--ink)}
+  .btn:hover{background:#f0f0f0}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.primary:hover{background:#333}
+  .btn.sm{padding:5px 9px;font-size:12px}
+
+  .seg{display:inline-flex;border:1px solid #bbb;border-radius:5px;overflow:hidden;background:#fff}
+  .seg button{padding:8px 18px;font-size:13px;font-weight:700;border:0;background:#fff;cursor:pointer;color:var(--ink)}
+  .seg button+button{border-left:1px solid #bbb}
+  .seg button.on{background:var(--ink);color:#fff}
+
+  .stage{padding:22px}
+  .sheet{position:relative;width:min(100%,1000px);margin:0 auto;aspect-ratio:3/2;background:#fff;border:1px solid #c7c7c7;box-shadow:0 1px 4px rgba(0,0,0,.10);touch-action:manipulation}
+  .sheet>img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;user-select:none;-webkit-user-drag:none}
+
+  .miss{position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:repeating-linear-gradient(-45deg,#fafafa 0 24px,#f1f1f1 24px 48px)}
+  .miss div{background:#fff;border:1px solid #ccc;padding:18px 26px;font-size:13px;text-align:center;max-width:75%}
+  .miss b{font-family:ui-monospace,monospace}
+  .miss .btn{margin-top:10px}
+
+  #fields{position:absolute;inset:0}
+  .field{position:absolute;white-space:pre-wrap;word-break:break-word;overflow:hidden;line-height:1.3;padding:.25% .35%;outline:none}
+  .field.testo{cursor:text;border:1px dashed transparent}
+  .field.testo:hover{border-color:#999}
+  .field.testo:focus{border:1px solid #111;background:rgba(0,0,0,.03)}
+  .field.testo:empty::before{content:attr(data-ph);opacity:.35;font-style:italic}
+  .field.spunta{cursor:pointer;border:1px dashed #c9c9c9;border-radius:3px;display:flex;align-items:center;justify-content:center}
+  .field.spunta:hover{background:rgba(0,0,0,.06);border-color:#666}
+  .field.spunta:focus{outline:2px solid #111;outline-offset:1px}
+  .field.spunta.boxed{border:1.5px solid #111;background:#fff}
+  .ck{position:absolute;inset:7%;pointer-events:none;color:#000}
+  .ck svg{width:100%;height:100%;display:block}
+
+  .alignbar{position:absolute;z-index:20;display:flex;border:1px solid var(--ink);border-radius:5px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .alignbar button{border:0;background:#fff;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer}
+  .alignbar button+button{border-left:1px solid var(--line)}
+  .alignbar button.on{background:var(--ink);color:#fff}
+
+  .hint{text-align:center;color:var(--mut);font-size:12px;padding:0 16px 20px}
+
+  .toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:99}
+  .toast{background:var(--ink);color:#fff;padding:9px 14px;border-radius:5px;font-size:13px;max-width:340px;animation:tin .2s ease-out}
+  .toast.err{background:#8a1f1f}
+  .toast.out{opacity:0;transition:.3s}
+  @keyframes tin{from{opacity:0;transform:translateY(8px)}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Compilatore Raccomandata</h1>
+  <div class="seg">
+    <button id="tFronte" class="on" type="button">Fronte</button>
+    <button id="tRetro" type="button">Retro</button>
+  </div>
+  <button class="btn primary" id="btnPdf" type="button">Esporta PDF</button>
+</header>
+
+<div class="stage">
+  <div class="sheet" id="sheet">
+    <img id="sheetImg" alt="" draggable="false">
+    <div class="miss" id="miss" hidden>
+      <div><b id="missName">fronte.png</b> non trovato nella cartella.<br>
+      Trascina il file qui sopra, oppure:<br>
+      <button class="btn sm" id="btnMiss" type="button">Scegli file…</button></div>
+    </div>
+    <div id="fields"></div>
+    <div class="alignbar" id="alignbar" hidden>
+      <button type="button" data-a="left">SX</button>
+      <button type="button" data-a="center">C</button>
+      <button type="button" data-a="right">DX</button>
+    </div>
+  </div>
+</div>
+
+<p class="hint">Clicca un campo per scrivere · clicca le spunte per attivarle · usa la barra <b>SX C DX</b> sopra il campo attivo per l'allineamento</p>
+
+<div class="toasts" id="toasts"></div>
+<input type="file" id="fileImg" accept="image/png,image/jpeg" hidden>
+
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════════════
+   SCHEMA FISSO — da raccomandata-schema.csv (fronte/retro invertiti)
+   ══════════════════════════════════════════════════════════════ */
+const CAMPI_FISSI=[
+  /* ── FRONTE (ex campi "retro") ── */
+  {page:'fronte', x:.1931,y:.2145,w:.3780,h:.0540, name:'Numero',              fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
+  {page:'fronte', x:.0460,y:.2589,w:.0310,h:.0510, name:'Cifra 1',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.0872,y:.2592,w:.0330,h:.0510, name:'Cifra 2',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.1284,y:.2592,w:.0600,h:.0510, name:'Cifre 3',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.1566,y:.3652,w:.4218,h:.0600, name:'Destinatario',        fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
+  {page:'fronte', x:.1548,y:.4306,w:.4236,h:.0532, name:'Indirizzo',           fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
+  {page:'fronte', x:.2076,y:.4961,w:.3709,h:.0532, name:'CAP',                 fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
+  {page:'fronte', x:.0992,y:.6271,w:.0310,h:.0510, name:'Cifra 4',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.1376,y:.6260,w:.0330,h:.0510, name:'Cifra 5',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.1807,y:.6273,w:.0600,h:.0510, name:'Cifre 6',             fontPt:17, align:'left',   multi:0, bold:0, type:'testo'},
+  {page:'fronte', x:.0466,y:.8247,w:.0227,h:.0368, name:'Spunta 1',            type:'spunta', box:0, mark:'v'},
+  {page:'fronte', x:.0430,y:.8861,w:.0245,h:.0368, name:'Spunta 2',            type:'spunta', box:0, mark:'v'},
+  {page:'fronte', x:.3976,y:.7565,w:.5691,h:.0655, name:'Firma del ricevente', fontPt:17, align:'center', multi:1, bold:0, type:'testo'},
+  {page:'fronte', x:.3930,y:.8888,w:.5709,h:.0559, name:"Firma dell'addetto",  fontPt:17, align:'center', multi:1, bold:0, type:'testo'},
+  /* ── RETRO (ex campi "fronte") ── */
+  {page:'retro',  x:.3294,y:.5356,w:.5000,h:.0668, name:'Riga 1',              fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
+  {page:'retro',  x:.3280,y:.6133,w:.5000,h:.0668, name:'Riga 2',              fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
+  {page:'retro',  x:.3285,y:.6883,w:.5000,h:.0668, name:'Riga 3',              fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
+  {page:'retro',  x:.3280,y:.7620,w:.5000,h:.0668, name:'Riga 4',              fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
+  {page:'retro',  x:.3276,y:.8315,w:.5000,h:.0668, name:'Riga 5',              fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
+  {page:'retro',  x:.3271,y:.9106,w:.5000,h:.0668, name:'Riga 6',              fontPt:17, align:'left',   multi:1, bold:0, type:'testo'},
+];
+
+const MM2PT=72/25.4, PAGE_W_MM=300, PAGE_H_MM=200, PAGE_H_PT=PAGE_H_MM*MM2PT;
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const $=id=>document.getElementById(id);
+const SVG_V='<svg viewBox="0 0 100 100"><path d="M16 55 L40 79 L84 22" fill="none" stroke="currentColor" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const SVG_X='<svg viewBox="0 0 100 100"><path d="M22 22 L78 78 M78 22 L22 78" fill="none" stroke="currentColor" stroke-width="13" stroke-linecap="round"/></svg>';
+
+const IMG={fronte:{ok:false,loaded:false},retro:{ok:false,loaded:false}};
+let uid=1;
+const state={page:'fronte',fields:{fronte:[],retro:[]}};
+const sheet=$('sheet'),fieldsL=$('fields'),sheetImg=$('sheetImg'),alignbar=$('alignbar');
+const find=id=>[...state.fields.fronte,...state.fields.retro].find(f=>f.id===id);
+
+/* ── immagini: carico fronte.png / retro.png dalla stessa cartella ── */
+function registerImage(key,img){
+  const maxW=2400,scale=Math.min(1,maxW/img.naturalWidth);
+  const c=document.createElement('canvas');
+  c.width=Math.round(img.naturalWidth*scale);c.height=Math.round(img.naturalHeight*scale);
+  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
+  g.drawImage(img,0,0,c.width,c.height);
+  IMG[key]={ok:true,loaded:true,dataUrl:c.toDataURL('image/png')};
+  if(state.page===key)renderStage();
+}
+function loadPageImage(key){
+  const cands=[key+'.png', key.charAt(0).toUpperCase()+key.slice(1)+'.png', key+'.jpg'];
+  let i=0;const im=new Image();
+  im.onload=()=>registerImage(key,im);
+  im.onerror=()=>{i++; if(i<cands.length)im.src=cands[i];
+    else{IMG[key].loaded=true;if(state.page===key)renderStage();}};
+  im.src=cands[0];
+}
+function readFileAsImage(key,file){
+  const fr=new FileReader();
+  fr.onload=()=>{const im=new Image();
+    im.onload=()=>registerImage(key,im);
+    im.onerror=()=>toast('File immagine non valido','err');
+    im.src=fr.result;};
+  fr.readAsDataURL(file);
+}
+function showImage(){
+  const k=state.page,info=IMG[k];
+  $('miss').hidden=!(info.loaded&&!info.ok);
+  sheetImg.style.display=info.ok?'':'none';
+  if(info.ok)sheetImg.src=info.dataUrl;
+  $('missName').textContent=k+'.png';
+}
+$('btnMiss').onclick=()=>$('fileImg').click();
+$('fileImg').addEventListener('change',e=>{
+  const f=e.target.files[0];if(f)readFileAsImage(state.page,f);e.target.value='';
+});
+sheet.addEventListener('dragover',e=>e.preventDefault());
+sheet.addEventListener('drop',e=>{
+  e.preventDefault();
+  const files=[...e.dataTransfer.files].filter(f=>/png|jpe?g/i.test(f.name));
+  for(const f of files){
+    const key=/retro/i.test(f.name)?'retro':(/fronte/i.test(f.name)?'fronte':state.page);
+    readFileAsImage(key,f);
+  }
+});
+
+/* ── costruzione campi (fissi, non modificabili) ── */
+function place(el,f){el.style.left=f.x*100+'%';el.style.top=f.y*100+'%';el.style.width=f.w*100+'%';el.style.height=f.h*100+'%';}
+function fontPx(f){return f.fontPt*(sheet.clientHeight/PAGE_H_PT);}
+function styleField(el,f){
+  if(f.type==='spunta')return;
+  el.style.fontSize=fontPx(f)+'px';el.style.fontWeight=f.bold?700:400;el.style.textAlign=f.align;
+}
+function buildField(f){
+  const el=document.createElement('div');
+  el.className='field '+(f.type||'testo');el.dataset.id=f.id;
+  place(el,f);styleField(el,f);
+  if(f.type==='spunta'){
+    if(f.box)el.classList.add('boxed');
+    const ck=document.createElement('span');ck.className='ck';
+    ck.innerHTML=f.mark==='x'?SVG_X:SVG_V;
+    ck.style.display=f.value?'':'none';
+    el.appendChild(ck);
+    el.tabIndex=0;
+    el.onclick=()=>{f.value=f.value?0:1;ck.style.display=f.value?'':'none';hideAlignBar();};
+    el.onkeydown=ev=>{if(ev.key===' '||ev.key==='Enter'){ev.preventDefault();el.click();}};
+  }else{
+    el.contentEditable='true';el.spellcheck=false;el.dataset.ph=f.name;
+    el.innerText=f.value||'';
+    el.addEventListener('input',()=>{
+      f.value=el.innerText.replace(/\u00a0/g,' ');
+      if(!f.multi&&/\n/.test(f.value)){f.value=f.value.replace(/\n+/g,' ');el.innerText=f.value;caretEnd(el);}
+    });
+    if(!f.multi){
+      el.addEventListener('keydown',ev=>{if(ev.key==='Enter')ev.preventDefault();});
+      el.addEventListener('paste',ev=>{
+        ev.preventDefault();
+        const t=(ev.clipboardData.getData('text/plain')||'').replace(/\s*\n\s*/g,' ').trim();
+        document.execCommand('insertText',false,t);
+      });
+    }
+  }
+  return el;
+}
+function caretEnd(el){
+  const r=document.createRange();r.selectNodeContents(el);r.collapse(false);
+  const s=getSelection();s.removeAllRanges();s.addRange(r);
+}
+function renderStage(){
+  showImage();
+  fieldsL.innerHTML='';
+  for(const f of state.fields[state.page])fieldsL.appendChild(buildField(f));
+}
+
+/* ── barra allineamento SX / C / DX ── */
+function showAlignBar(f){
+  alignbar.hidden=false;alignbar.dataset.id=f.id;
+  const W=sheet.clientWidth,H=sheet.clientHeight;
+  const bw=alignbar.offsetWidth,bh=alignbar.offsetHeight;
+  alignbar.style.left=clamp(f.x*W,0,W-bw)+'px';
+  alignbar.style.top=(f.y*H-bh-6<0 ? f.y*H+f.h*H+6 : f.y*H-bh-6)+'px';
+  alignbar.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.a===f.align));
+}
+function hideAlignBar(){alignbar.hidden=true;}
+fieldsL.addEventListener('focusin',e=>{
+  const el=e.target.closest('.field');if(!el)return hideAlignBar();
+  const f=find(el.dataset.id);
+  if(f&&f.type!=='spunta')showAlignBar(f);else hideAlignBar();
+});
+fieldsL.addEventListener('focusout',()=>{
+  setTimeout(()=>{if(!fieldsL.contains(document.activeElement))hideAlignBar();},0);
+});
+alignbar.addEventListener('pointerdown',e=>e.preventDefault()); // non perde il focus
+alignbar.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const f=find(alignbar.dataset.id);if(!f)return;
+  f.align=b.dataset.a;
+  const el=fieldsL.querySelector('[data-id="'+f.id+'"]');
+  if(el)el.style.textAlign=f.align;
+  alignbar.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+});
+
+/* ── pagine ── */
+function setPage(p){
+  if(state.page===p)return;
+  state.page=p;hideAlignBar();
+  $('tFronte').classList.toggle('on',p==='fronte');
+  $('tRetro').classList.toggle('on',p==='retro');
+  renderStage();
+}
+$('tFronte').onclick=()=>setPage('fronte');
+$('tRetro').onclick=()=>setPage('retro');
+
+function toast(msg,type){
+  const t=document.createElement('div');
+  t.className='toast'+(type==='err'?' err':'');t.textContent=msg;
+  $('toasts').appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},3300);
+}
+
+/* ── PDF ── */
+function wrapText(doc,text,maxW){
+  const out=[];
+  for(const raw of String(text).split(/\r?\n/)){
+    let line='';
+    for(let word of raw.split(' ')){
+      while(doc.getTextWidth(word)>maxW&&word.length>1){
+        let cut=word.length-1;
+        while(cut>1&&doc.getTextWidth(word.slice(0,cut))>maxW)cut--;
+        out.push(word.slice(0,cut));word=word.slice(cut);
+      }
+      const t=line?line+' '+word:word;
+      if(doc.getTextWidth(t)<=maxW||!line)line=t;else{out.push(line);line=word;}
+    }
+    out.push(line);
+  }
+  return out;
+}
+function drawField(doc,f){
+  const X=f.x*PAGE_W_MM,Y=f.y*PAGE_H_MM,W=f.w*PAGE_W_MM,H=f.h*PAGE_H_MM;
+  if(f.type==='spunta'){
+    doc.setDrawColor(0);
+    if(f.box){doc.setLineWidth(0.35);doc.rect(X,Y,W,H,'S');}
+    if(f.value){
+      doc.setLineWidth(Math.max(0.4,Math.min(W,H)*0.10));
+      if(f.mark==='x'){
+        doc.line(X+W*0.18,Y+H*0.18,X+W*0.82,Y+H*0.82);
+        doc.line(X+W*0.82,Y+H*0.18,X+W*0.18,Y+H*0.82);
+      }else{
+        doc.line(X+W*0.16,Y+H*0.55,X+W*0.42,Y+H*0.80);
+        doc.line(X+W*0.42,Y+H*0.80,X+W*0.86,Y+H*0.20);
+      }
+    }
+    return;
+  }
+  const text=String(f.value||'').trim();
+  if(!text)return;
+  doc.setFont('helvetica',f.bold?'bold':'normal');doc.setFontSize(f.fontPt);
+  const mmPt=25.4/72,lineH=f.fontPt*1.35*mmPt,pad=0.8;
+  const lines=f.multi?wrapText(doc,text,W-2*pad):[text.split(/\r?\n/)[0]];
+  let y=Y+pad+f.fontPt*mmPt*0.85;
+  for(const ln of lines){
+    if(y>Y+H-0.6)break;
+    let x=X+pad,opts={};
+    if(f.align==='center'){x=X+W/2;opts.align='center';}
+    else if(f.align==='right'){x=X+W-pad;opts.align='right';}
+    doc.text(ln,x,y,opts);
+    y+=lineH;
+  }
+}
+$('btnPdf').onclick=()=>{
+  if(typeof window.jspdf==='undefined'){toast('jsPDF non caricato: controlla la connessione','err');return;}
+  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:[PAGE_W_MM,PAGE_H_MM]});
+  ['fronte','retro'].forEach((p,i)=>{
+    if(i)doc.addPage([PAGE_W_MM,PAGE_H_MM],'landscape');
+    if(IMG[p].ok)doc.addImage(IMG[p].dataUrl,'PNG',0,0,PAGE_W_MM,PAGE_H_MM);
+    else{
+      doc.setFillColor(255,255,255);doc.rect(0,0,PAGE_W_MM,PAGE_H_MM,'F');
+      doc.setTextColor(160);doc.setFontSize(12);doc.text(p+'.png non trovato',8,10);
+    }
+    doc.setTextColor(0);
+    for(const f of state.fields[p])drawField(doc,f);
+  });
+  doc.save('raccomandata-'+new Date().toISOString().slice(0,10)+'.pdf');
+  toast('PDF generato: 2 pagine');
+};
+
+/* ── avvio ── */
+for(const c of CAMPI_FISSI){
+  const p=c.page==='retro'?'retro':'fronte';
+  const f={...c,id:'f'+(uid++),value:c.type==='spunta'?0:''};
+  state.fields[p].push(f);
+}
+new ResizeObserver(()=>{
+  fieldsL.querySelectorAll('.field').forEach(el=>{
+    const f=find(el.dataset.id);if(f)styleField(el,f);
+  });
+}).observe(sheet);
+loadPageImage('fronte');
+loadPageImage('retro');
+renderStage();
+</script>
+</body>
+</html>
