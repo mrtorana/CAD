@@ -6,7 +6,7 @@
 <title>Compila Modulo — Fronte/Retro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -77,34 +77,19 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 .slot .big{font:800 15px "Sora";margin:0 0 4px}
 .slot p{margin:0 0 16px;color:var(--mut);font-size:13px}
 
-/* ── campi ── */
+/* ── campi (fissi, solo compilabili) ── */
 .f{position:absolute}
 .f input{width:100%;height:100%;border:0;border-radius:2px;outline:none;background:transparent;
   font:500 13px/1.2 "IBM Plex Sans",sans-serif;color:var(--ink2);padding:0 4px;transition:background .15s}
 .f input.left{text-align:left}
 .f input.center{text-align:center}
-.f input.firma{font:600 18px "Caveat",cursive;color:var(--ink2);letter-spacing:.4px}
 .f input::placeholder{color:var(--faint);opacity:.6;font-size:10.5px;font-weight:400}
 .f:hover input{outline:1px dashed rgba(37,99,235,.55);outline-offset:-1px}
 .f input:focus{outline:2px solid var(--blue);background:var(--blue-soft)}
 @keyframes flash{0%{background:rgba(37,99,235,.25)}100%{background:transparent}}
 .f.flash input{animation:flash 1.3s ease-out}
 
-/* linguetta sposta + maniglie */
-.grip{position:absolute;left:0;bottom:100%;margin-bottom:2px;height:16px;min-width:18px;padding:0 5px;
-  display:flex;align-items:center;justify-content:center;background:#475467;color:#fff;
-  font:700 10px/1 "IBM Plex Mono";border-radius:4px;cursor:grab;opacity:.5;transition:.15s;
-  user-select:none;touch-action:none;z-index:6}
-.f:hover .grip,.f.drag .grip{opacity:1;background:var(--blue)}
-.grip:active{cursor:grabbing}
-.hd{position:absolute;width:10px;height:10px;background:#fff;border:2px solid var(--blue);border-radius:2px;
-  opacity:0;transition:.15s;touch-action:none;z-index:6}
-.f:hover .hd,.f.drag .hd{opacity:1}
-.hd-e{right:-6px;top:50%;margin-top:-6px;cursor:ew-resize}
-.hd-s{bottom:-6px;left:50%;margin-left:-6px;cursor:ns-resize}
-.hd-se{right:-6px;bottom:-6px;cursor:nwse-resize}
-
-/* spunte — nero, più piccole */
+/* spunte — nero, piccole */
 .f.ck{cursor:pointer}
 .f.ck svg{position:absolute;inset:12%;width:76%;height:76%;overflow:visible}
 .f.ck path{fill:none;stroke:var(--ink2);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;
@@ -142,16 +127,12 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 .m-skip:hover{color:var(--blue)}
 .m-skip.primlink{color:#fff;background:var(--blue);text-decoration:none;border-radius:8px;padding:10px 20px;font:600 13px "Sora"}
 
-/* ── statusbar / toast / chip ── */
+/* ── statusbar / toast ── */
 .statusbar{display:flex;gap:22px;align-items:center;padding:9px 26px;border-top:1px solid var(--line);background:#fff;
   font:400 11px "IBM Plex Mono",monospace;color:var(--mut);flex-wrap:wrap}
-.linkish{background:none;border:0;padding:0;color:var(--mut);font:inherit;text-decoration:underline;text-underline-offset:3px}
-.linkish:hover{color:var(--blue)}
 .ver{color:var(--blue);font-weight:500}
 .statusbar .fname{margin-left:auto;color:var(--ink)}
 .statusbar .fname b{color:var(--blue);font-weight:500}
-#chip{position:fixed;z-index:60;display:none;pointer-events:none;background:var(--ink);color:#fff;
-  font:600 11px "IBM Plex Mono";padding:4px 9px;border-radius:4px;box-shadow:0 6px 14px rgba(0,0,0,.35)}
 #toast{position:fixed;right:24px;bottom:24px;z-index:70;background:var(--ink);color:#fff;padding:12px 18px;
   border-radius:9px;border-left:4px solid var(--blue);font:500 13px "IBM Plex Sans";box-shadow:0 14px 34px rgba(16,24,40,.35);
   transform:translateY(16px);opacity:0;transition:.3s;pointer-events:none;max-width:70vw}
@@ -165,13 +146,12 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 <header>
   <div class="brand">
     <div class="logo"><i class="l1"></i><i class="l2"></i></div>
-    <div><h1>Compila Modulo</h1><small>pdf → fronte/retro → export · v5</small></div>
+    <div><h1>Compila Modulo</h1><small>pdf → fronte/retro → export · v6</small></div>
   </div>
   <div class="spacer"></div>
   <div class="src" id="src"><span class="dot"></span><b id="srcName">nessun PDF importato</b></div>
   <button class="btn ghost" id="btnImport">⤓ Importa PDF</button>
   <button class="btn ghost" id="btnClear">Svuota</button>
-  <button class="btn ghost" id="btnCsv" title="Esporta le posizioni attuali dei riquadri">⤓ Esporta CSV</button>
   <button class="btn prim" id="btnExport">Esporta PDF ↗</button>
 </header>
 
@@ -210,9 +190,8 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 </main>
 
 <div class="statusbar">
-  <span class="ver">v5</span>
-  <span class="hint">⠿ trascina per spostare · quadratini ▸ larghezza/altezza · ✓ clic sulle caselle</span>
-  <button class="linkish" id="btnResetPos">↺ ripristina posizioni originali</button>
+  <span class="ver">v6</span>
+  <span class="hint">✎ compila i riquadri · ✓ clic sulle caselle · i dati si azzerano a ogni PDF importato</span>
   <span class="fname">il PDF verrà salvato come <b id="fname">CAD.pdf</b></span>
 </div>
 
@@ -220,7 +199,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
   <div class="m-card">
     <div class="m-badge">PDF</div>
     <h2>Importa il PDF della notifica</h2>
-    <p>Leggo le due pagine ed estraggo automaticamente codice dell'invio, numero atto,<br>data, destinatario e indirizzo.</p>
+    <p>Leggo le due pagine ed estraggo automaticamente codice dell'invio, numero atto,<br>data, destinatario e indirizzo. Ogni importazione riparte da zero.</p>
     <div class="m-drop" id="mDrop">
       <p class="dd">Trascina qui il PDF</p>
       <small>oppure</small><br>
@@ -237,12 +216,11 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 
 <input type="file" id="fPdf" accept="application/pdf,.pdf" hidden>
 <input type="file" id="fImg" accept="image/*" multiple hidden>
-<div id="chip"></div>
 <div id="toast"></div>
 
 <script>
 "use strict";
-/* ============ campi — v5: date uniformate (giorno=mese, anno più largo), stessa Y/H per riga ============ */
+/* ============ campi — posizioni definitive e bloccate ============ */
 const CODICE={n:"Codice dell'invio",x:18.02,y:24.70,w:46.58,h:7.20};
 const FRONT=[
   {n:"Destinazione - riga 1",x:37.06,y:52.05,w:38.13,h:6.76},
@@ -254,14 +232,14 @@ const FRONT=[
 ];
 const RETRO=[
   {n:"Atto Numero",x:26.00,y:20.64,w:39.13,h:5.35},
-  /* riga data 1 — Giorno e Mese identici, Anno più largo, stessa linea (fondo 32.28) */
+  /* riga data 1 — Giorno e Mese identici, Anno più largo, stessa linea */
   {n:"Data - Giorno",x:14.26,y:27.08,w:3.90,h:5.20},
   {n:"Data - Mese",  x:17.27,y:27.08,w:3.90,h:5.20},
   {n:"Data Anno",    x:20.41,y:27.08,w:7.20,h:5.20},
   {n:"Destinatario",x:22.91,y:34.87,w:32.57,h:6.06},
   {n:"Indirizzo",x:22.40,y:41.07,w:59.57,h:6.48},
   {n:"CAP / Località / Provincia",x:27.54,y:47.83,w:53.08,h:6.34},
-  /* riga data 2 — stessa logica (fondo 66.98) */
+  /* riga data 2 */
   {n:"GIORNO 2",x:18.74,y:62.18,w:3.60,h:4.80},
   {n:"MESE 2",  x:21.61,y:62.18,w:3.60,h:4.80},
   {n:"ANNO 2",  x:25.48,y:62.18,w:8.46,h:4.80},
@@ -271,16 +249,15 @@ const RETRO=[
   {n:"FIRMA DELL'ADDETTO",x:41.22,y:86.28,w:44.62,h:6.20},
 ];
 const SIDES={fronte:[CODICE,...FRONT],retro:RETRO};
-/* righe di date: nell'export vengono scritte con carattere e baseline comuni */
+/* righe di date: nell'export carattere e baseline comuni */
 const DATE_ROWS=[["Data - Giorno","Data - Mese","Data Anno"],["GIORNO 2","MESE 2","ANNO 2"]];
 const DATESET=new Set(DATE_ROWS.flat());
 const REF=900;
-const firma=n=>/firma/i.test(n);
-const centrato=n=>firma(n)||n==="Codice dell'invio";
+const centrato=n=>/firma/i.test(n)||n==="Codice dell'invio"; // firme + codice invio centrati, resto a sinistra
 const RIGHE=["Destinazione - riga 1","riga 2","riga 3","riga 4","riga 5","riga 6"];
 
-/* ============ stato ============ */
-const VALS={},CHECKS={},POSOV={},REG={};
+/* ============ stato (solo in memoria, nessun salvataggio) ============ */
+const VALS={},CHECKS={},REG={};
 const SAFE={fronte:false,retro:false},MAN={fronte:false,retro:false};
 let SRC="",imgSide=null,needList=[],pendingExport=false;
 
@@ -289,28 +266,12 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const san=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase()
   .replace(/[^A-Z0-9]+/g,"_").replace(/^_+|_+$/g,"");
 const fname=()=>["CAD",san(VALS["Atto Numero"]),san(VALS["Destinatario"])].filter(Boolean).join("_")+".pdf";
-const getPos=f=>POSOV[f.n]||f;
 
-function save(){try{localStorage.setItem("compilamodulo.v5",JSON.stringify({v:VALS,c:CHECKS,pov:POSOV,src:SRC}));}catch(e){}}
-function load(){
-  let d=null;
-  try{d=JSON.parse(localStorage.getItem("compilamodulo.v5"));}catch(e){}
-  if(!d){ /* migra dai salvataggi precedenti: mantiene i dati compilati, azzera le posizioni vecchie */
-    try{
-      const o=JSON.parse(localStorage.getItem("compilamodulo.v4"))
-            ||JSON.parse(localStorage.getItem("compilamodulo.v3"))
-            ||JSON.parse(localStorage.getItem("compilamodulo.v2"));
-      if(o)d={v:o.v,c:o.c,pov:{},src:o.src};
-    }catch(e){}
-  }
-  if(!d)return;
-  Object.assign(VALS,d.v||{});Object.assign(CHECKS,d.c||{});Object.assign(POSOV,d.pov||{});SRC=d.src||"";
-}
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),3600);}
 function updateName(){$("#fname").textContent=fname();}
 
-/* ============ archivio immagini (IndexedDB) ============ */
+/* ============ archivio SOLO immagini (necessario per export automatico) ============ */
 const IDB={db:null,
   open(){return new Promise(res=>{
     if(this.db)return res(this.db);
@@ -329,88 +290,30 @@ const IDB={db:null,
       rq.onsuccess=()=>res(rq.result||null);rq.onerror=()=>res(null);}catch(e){res(null);}});}
 };
 
-/* ============ costruzione campi ============ */
-function applyPos(wrap,p){wrap.style.left=p.x+"%";wrap.style.top=p.y+"%";wrap.style.width=p.w+"%";wrap.style.height=p.h+"%";}
-function setPos(f,p){POSOV[f.n]={x:p.x,y:p.y,w:p.w,h:p.h};applyPos(REG[f.n].wrap,POSOV[f.n]);save();}
-
-function showChip(ev,p){const c=$("#chip");
-  c.textContent=`x ${p.x.toFixed(1)} · y ${p.y.toFixed(1)} · ${p.w.toFixed(1)}×${p.h.toFixed(1)} %`;
-  c.style.display="block";c.style.left=(ev.clientX+16)+"px";c.style.top=(ev.clientY+16)+"px";}
-function hideChip(){$("#chip").style.display="none";}
-
-function startAdjust(e,f,mode){
-  e.preventDefault();e.stopPropagation();
-  const wrap=REG[f.n].wrap,ov=wrap.parentElement,r=ov.getBoundingClientRect();
-  const start={...getPos(f),px:e.clientX,py:e.clientY};
-  const tgt=e.currentTarget;tgt.setPointerCapture(e.pointerId);
-  wrap.classList.add("drag");
-  const mv=ev=>{
-    const dx=(ev.clientX-start.px)/r.width*100,dy=(ev.clientY-start.py)/r.height*100;
-    const p={x:start.x,y:start.y,w:start.w,h:start.h};
-    if(mode==="move"){p.x=clamp(start.x+dx,0,100-p.w);p.y=clamp(start.y+dy,0,100-p.h);}
-    if(mode.includes("e"))p.w=clamp(start.w+dx,2,100-start.x);
-    if(mode.includes("s"))p.h=clamp(start.h+dy,1.2,100-start.y);
-    setPos(f,p);showChip(ev,p);
-  };
-  const up=()=>{tgt.removeEventListener("pointermove",mv);tgt.removeEventListener("pointerup",up);
-    tgt.removeEventListener("pointercancel",up);wrap.classList.remove("drag");hideChip();};
-  tgt.addEventListener("pointermove",mv);
-  tgt.addEventListener("pointerup",up);tgt.addEventListener("pointercancel",up);
-}
+/* ============ costruzione campi (fissi) ============ */
+function applyPos(wrap,f){wrap.style.left=f.x+"%";wrap.style.top=f.y+"%";wrap.style.width=f.w+"%";wrap.style.height=f.h+"%";}
 
 function buildSide(side){
   const ov=$("#ov-"+side);ov.innerHTML="";
   SIDES[side].forEach(f=>{
     const wrap=document.createElement("div");
     wrap.className="f"+(f.type==="spunta"?" ck":"");
-    applyPos(wrap,getPos(f));
+    applyPos(wrap,f);
 
     if(f.type==="spunta"){
       wrap.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></svg>';
-      wrap.title=f.n+" — clic per spuntare, trascina per spostare";
+      wrap.title=f.n+" — clic per spuntare";
       if(CHECKS[f.n])wrap.classList.add("on");
-      wrap.addEventListener("pointerdown",e=>{
-        if(e.target.closest(".grip,.hd"))return;
-        e.preventDefault();
-        const r2=ov.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,start={...getPos(f)};
-        let moved=false;
-        wrap.setPointerCapture(e.pointerId);
-        const mv=ev=>{
-          if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)>4){moved=true;wrap.classList.add("drag");}
-          if(moved){
-            const p={...start,
-              x:clamp(start.x+(ev.clientX-sx)/r2.width*100,0,100-start.w),
-              y:clamp(start.y+(ev.clientY-sy)/r2.height*100,0,100-start.h)};
-            setPos(f,p);showChip(ev,p);
-          }
-        };
-        const up=()=>{wrap.removeEventListener("pointermove",mv);wrap.removeEventListener("pointerup",up);
-          wrap.removeEventListener("pointercancel",up);wrap.classList.remove("drag");hideChip();
-          if(!moved){CHECKS[f.n]=!CHECKS[f.n];wrap.classList.toggle("on",CHECKS[f.n]);save();}};
-        wrap.addEventListener("pointermove",mv);
-        wrap.addEventListener("pointerup",up);wrap.addEventListener("pointercancel",up);
-      });
+      wrap.addEventListener("click",()=>{CHECKS[f.n]=!CHECKS[f.n];wrap.classList.toggle("on",CHECKS[f.n]);});
     }else{
       const inp=document.createElement("input");
       inp.className=centrato(f.n)?"center":"left";
-      if(firma(f.n))inp.classList.add("firma");
       inp.placeholder=f.n;inp.title=f.n;inp.value=VALS[f.n]||"";
-      inp.addEventListener("input",()=>{VALS[f.n]=inp.value;save();updateName();});
+      inp.addEventListener("input",()=>{VALS[f.n]=inp.value;updateName();});
       wrap.appendChild(inp);
       REG[f.n]={inp,wrap};
     }
     REG[f.n]=REG[f.n]||{wrap};
-
-    const g=document.createElement("span");g.className="grip";g.textContent="⠿";
-    g.title="trascina per spostare";
-    g.addEventListener("pointerdown",e=>startAdjust(e,f,"move"));
-    wrap.appendChild(g);
-    [["hd-e","e"],["hd-s","s"],["hd-se","se"]].forEach(([cls,mode])=>{
-      const h=document.createElement("span");h.className="hd "+cls;
-      h.title=mode==="e"?"larghezza":mode==="s"?"altezza":"larghezza + altezza";
-      h.addEventListener("pointerdown",e=>startAdjust(e,f,mode));
-      wrap.appendChild(h);
-    });
     ov.appendChild(wrap);
   });
 }
@@ -421,7 +324,13 @@ function setVal(n,v){
   const r=REG[n];
   if(r&&r.inp){r.inp.value=VALS[n];
     if(v){r.wrap.classList.remove("flash");void r.wrap.offsetWidth;r.wrap.classList.add("flash");}}
-  save();updateName();
+  updateName();
+}
+/* ogni importazione (o Svuota) riparte da zero */
+function clearAll(){
+  Object.keys(VALS).forEach(k=>delete VALS[k]);
+  Object.keys(CHECKS).forEach(k=>delete CHECKS[k]);
+  rebuildAll();updateName();
 }
 
 /* ============ immagini ============ */
@@ -580,8 +489,9 @@ async function handlePdf(file){
   try{
     const pages=await parsePDF(file);
     if(!pages.flat().length)throw new Error("nessun testo trovato nel PDF");
+    clearAll();                       /* si riparte sempre da zero */
     const done=fillFrom(pages);
-    SRC=file.name;save();
+    SRC=file.name;
     $("#srcName").textContent=file.name;$("#src").classList.add("ok");
     mStatus.className="m-status ok";
     mStatus.textContent="✓ "+(done.length?done.join(" · "):"nessun dato riconosciuto — compila manualmente");
@@ -596,36 +506,17 @@ async function handlePdf(file){
   }
 }
 
-/* ============ svuota / ripristina / csv ============ */
+/* ============ svuota ============ */
 $("#btnClear").addEventListener("click",()=>{
   if(!confirm("Svuotare tutti i campi?"))return;
-  Object.keys(VALS).forEach(k=>delete VALS[k]);
-  Object.keys(CHECKS).forEach(k=>delete CHECKS[k]);
-  rebuildAll();save();updateName();toast("Campi svuotati");
-});
-$("#btnResetPos").addEventListener("click",()=>{
-  if(!confirm("Riportare tutti i riquadri alle posizioni originali?"))return;
-  Object.keys(POSOV).forEach(k=>delete POSOV[k]);
-  rebuildAll();save();toast("Posizioni ripristinate");
-});
-$("#btnCsv").addEventListener("click",()=>{
-  const esc=s=>/[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
-  const lines=["lato,nome,tipo,x,y,larghezza,altezza"];
-  ["fronte","retro"].forEach(side=>SIDES[side].forEach(f=>{
-    const p=getPos(f);
-    lines.push([side,esc(f.n),f.type||"testo",p.x.toFixed(2),p.y.toFixed(2),p.w.toFixed(2),p.h.toFixed(2)].join(","));
-  }));
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob(["\uFEFF"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"}));
-  a.download="posizioni.csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);
-  toast("posizioni.csv esportato");
+  clearAll();toast("Campi svuotati");
 });
 
-/* ============ export PDF ============ */
+/* ============ export PDF (~200 dpi) ============ */
 const sheetVisible=s=>!$("#sheet-"+s).hidden;
-function drawCheck(ctx,p,cw,ch){
-  const bx=p.x/100*cw,by=p.y/100*ch,bw=p.w/100*cw,bh=p.h/100*ch;
-  const s=0.74,cx=bx+bw/2,cy=by+bh/2;                  /* spunta più piccola */
+function drawCheck(ctx,f,cw,ch){
+  const bx=f.x/100*cw,by=f.y/100*ch,bw=f.w/100*cw,bh=f.h/100*ch;
+  const s=0.74,cx=bx+bw/2,cy=by+bh/2;
   const pt=(px,py)=>[cx+(px-cx)*s,cy+(py-cy)*s];
   const [x1,y1]=pt(bx+bw*0.12,by+bh*0.55);
   const [x2,y2]=pt(bx+bw*0.40,by+bh*0.84);
@@ -634,41 +525,40 @@ function drawCheck(ctx,p,cw,ch){
   ctx.lineWidth=Math.max(2,bh*0.12);
   ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x3,y3);ctx.stroke();
 }
-/* le date di una stessa riga vengono scritte con carattere e baseline identici */
 function drawDateRows(ctx,side,cw,ch,k){
   DATE_ROWS.forEach(names=>{
     const items=[];
-    names.forEach(n=>{const f=SIDES[side].find(x=>x.n===n);if(f)items.push({f,p:getPos(f)});});
+    names.forEach(n=>{const f=SIDES[side].find(x=>x.n===n);if(f)items.push(f);});
     if(!items.length)return;
     let fs=13*k;
-    items.forEach(i=>{fs=Math.min(fs,(i.p.h/100*ch)*0.82);});   /* carattere unico per la riga */
-    ctx.font=`600 ${fs}px "IBM Plex Sans",sans-serif`;
+    items.forEach(f=>{fs=Math.min(fs,(f.h/100*ch)*0.82);});
+    ctx.font=`500 ${fs}px "IBM Plex Sans",sans-serif`;
     ctx.fillStyle="#17223a";ctx.textAlign="left";ctx.textBaseline="alphabetic";
-    const cy=Math.max(...items.map(i=>(i.p.y+i.p.h/2)/100*ch)); /* centro comune = baseline comune */
+    const cy=Math.max(...items.map(f=>(f.y+f.h/2)/100*ch));
     const baseline=cy+fs*0.36;
-    items.forEach(({f,p})=>{
+    items.forEach(f=>{
       const v=(VALS[f.n]||"").trim();if(!v)return;
-      ctx.fillText(v,(p.x/100*cw)+4*k,baseline);
+      ctx.fillText(v,(f.x/100*cw)+4*k,baseline);
     });
   });
 }
 function renderSide(side){
   const img=$("#img-"+side);
   if(!sheetVisible(side)||!img.naturalWidth)return null;
-  const natW=img.naturalWidth,natH=img.naturalHeight,sc=Math.min(1,2400/natW);
+  const natW=img.naturalWidth,natH=img.naturalHeight;
+  const sc=Math.min(200/96,4200/natW);              /* ~200 dpi, testi nitidi */
   const cw=Math.round(natW*sc),ch=Math.round(natH*sc);
   const cv=document.createElement("canvas");cv.width=cw;cv.height=ch;
   const ctx=cv.getContext("2d");
   ctx.drawImage(img,0,0,cw,ch);
   const k=cw/REF;
   SIDES[side].forEach(f=>{
-    if(DATESET.has(f.n))return;                         /* le date le gestisce drawDateRows */
-    const p=getPos(f);
-    if(f.type==="spunta"){if(CHECKS[f.n])drawCheck(ctx,p,cw,ch);return;}
+    if(DATESET.has(f.n))return;
+    if(f.type==="spunta"){if(CHECKS[f.n])drawCheck(ctx,f,cw,ch);return;}
     const v=(VALS[f.n]||"").trim();if(!v)return;
-    const bx=p.x/100*cw,by=p.y/100*ch,bw=p.w/100*cw,bh=p.h/100*ch;
-    let fs=(firma(f.n)?18:13)*k;fs=Math.min(fs,bh*0.82);
-    ctx.font=`600 ${fs}px ${firma(f.n)?'"Caveat",cursive':'"IBM Plex Sans",sans-serif'}`;
+    const bx=f.x/100*cw,by=f.y/100*ch,bw=f.w/100*cw,bh=f.h/100*ch;
+    let fs=13*k;fs=Math.min(fs,bh*0.82);
+    ctx.font=`500 ${fs}px "IBM Plex Sans",sans-serif`;
     ctx.fillStyle="#17223a";
     ctx.textBaseline="middle";
     const y=by+bh/2+fs*0.05;
@@ -676,21 +566,22 @@ function renderSide(side){
     else{ctx.textAlign="left";ctx.fillText(v,bx+4*k,y);}
   });
   drawDateRows(ctx,side,cw,ch,k);
-  return cv;
+  return {cv,w:natW,h:natH};
 }
 async function doExport(){
   const btn=$("#btnExport");btn.disabled=true;btn.textContent="Genero…";
   try{
+    await document.fonts.load('500 16px "IBM Plex Sans"');
     await document.fonts.ready;
-    const c1=renderSide("fronte"),c2=renderSide("retro");
-    if(!c1&&!c2){toast("Carica prima le immagini fronte/retro");return;}
+    const p1=renderSide("fronte"),p2=renderSide("retro");
+    if(!p1&&!p2){toast("Carica prima le immagini fronte/retro");return;}
     if(typeof window.jspdf==="undefined")throw new Error("libreria jsPDF non caricata");
     const {jsPDF}=window.jspdf;let doc;
-    [c1,c2].filter(Boolean).forEach(cv=>{
-      const wpt=cv.width*0.75,hpt=cv.height*0.75,o=wpt>=hpt?"l":"p";
+    [p1,p2].filter(Boolean).forEach(pg=>{
+      const wpt=pg.w*0.75,hpt=pg.h*0.75,o=wpt>=hpt?"l":"p";
       if(!doc)doc=new jsPDF({orientation:o,unit:"pt",format:[wpt,hpt]});
       else doc.addPage([wpt,hpt],o);
-      doc.addImage(cv.toDataURL("image/jpeg",0.92),"JPEG",0,0,wpt,hpt);
+      doc.addImage(pg.cv.toDataURL("image/jpeg",0.95),"JPEG",0,0,wpt,hpt);
     });
     doc.save(fname());
     toast("PDF esportato: "+fname());
@@ -716,10 +607,8 @@ $("#btnExport").addEventListener("click",()=>{
 });
 
 /* ============ avvio ============ */
-load();
 buildSide("fronte");
 buildSide("retro");
-if(SRC){$("#srcName").textContent=SRC;$("#src").classList.add("ok");}
 initImages();
 updateName();
 </script>
