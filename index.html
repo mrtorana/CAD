@@ -66,7 +66,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
   background:none;border:1px solid var(--line);border-radius:6px;padding:5px 10px;transition:.15s}
 .ph button:hover{color:var(--blue);border-color:var(--blue)}
 .sheet-zone{display:flex;justify-content:center;background:#eef1f4;padding:22px 18px;min-height:200px}
-.sheet{position:relative;display:inline-block;line-height:0;animation:sheetin .45s ease both}
+.sheet{position:relative;display:inline-block;line-height:0;animation:sheetin .45s ease both;isolation:isolate}
 @keyframes sheetin{from{opacity:0;transform:scale(.985)}}
 .sheet img{display:block;max-width:100%;max-height:78vh;border:1px solid #d3dae3;background:#fff;box-shadow:0 10px 30px rgba(16,24,40,.14)}
 .ov{position:absolute;inset:0;line-height:1.4}
@@ -88,6 +88,10 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 .f input:focus{outline:2px solid var(--blue);background:var(--blue-soft)}
 @keyframes flash{0%{background:rgba(37,99,235,.25)}100%{background:transparent}}
 .f.flash input{animation:flash 1.3s ease-out}
+
+/* bitmap del codice (BAR) — moltiplica, non interattivo */
+.f.bar{pointer-events:none}
+.f.bar img{display:block;width:100%;height:100%;object-fit:fill;mix-blend-mode:multiply}
 
 /* spunte — nero, piccole */
 .f.ck{cursor:pointer}
@@ -146,7 +150,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 <header>
   <div class="brand">
     <div class="logo"><i class="l1"></i><i class="l2"></i></div>
-    <div><h1>Compila Modulo</h1><small>pdf → fronte/retro → export · v6</small></div>
+    <div><h1>Compila Modulo</h1><small>pdf → fronte/retro → export · v7</small></div>
   </div>
   <div class="spacer"></div>
   <div class="src" id="src"><span class="dot"></span><b id="srcName">nessun PDF importato</b></div>
@@ -190,8 +194,8 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 </main>
 
 <div class="statusbar">
-  <span class="ver">v6</span>
-  <span class="hint">✎ compila i riquadri · ✓ clic sulle caselle · i dati si azzerano a ogni PDF importato</span>
+  <span class="ver">v7</span>
+  <span class="hint">✎ compila i riquadri · ✓ clic sulle caselle · il codice bitmap viene estratto dal PDF e fuso in moltiplica</span>
   <span class="fname">il PDF verrà salvato come <b id="fname">CAD.pdf</b></span>
 </div>
 
@@ -199,7 +203,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
   <div class="m-card">
     <div class="m-badge">PDF</div>
     <h2>Importa il PDF della notifica</h2>
-    <p>Leggo le due pagine ed estraggo automaticamente codice dell'invio, numero atto,<br>data, destinatario e indirizzo. Ogni importazione riparte da zero.</p>
+    <p>Leggo le due pagine ed estraggo automaticamente codice dell'invio, numero atto,<br>data, destinatario, indirizzo e il codice bitmap. Ogni importazione riparte da zero.</p>
     <div class="m-drop" id="mDrop">
       <p class="dd">Trascina qui il PDF</p>
       <small>oppure</small><br>
@@ -232,14 +236,13 @@ const FRONT=[
 ];
 const RETRO=[
   {n:"Atto Numero",x:26.00,y:20.64,w:39.13,h:5.35},
-  /* riga data 1 — Giorno e Mese identici, Anno più largo, stessa linea */
   {n:"Data - Giorno",x:14.26,y:27.08,w:3.90,h:5.20},
   {n:"Data - Mese",  x:17.27,y:27.08,w:3.90,h:5.20},
   {n:"Data Anno",    x:20.41,y:27.08,w:7.20,h:5.20},
   {n:"Destinatario",x:22.91,y:34.87,w:32.57,h:6.06},
   {n:"Indirizzo",x:22.40,y:41.07,w:59.57,h:6.48},
   {n:"CAP / Località / Provincia",x:27.54,y:47.83,w:53.08,h:6.34},
-  /* riga data 2 */
+  {n:"BAR",x:63.20,y:48.53,w:8.01,h:6.48,type:"bitmap"},   /* codice bitmap dal PDF, fuso in moltiplica */
   {n:"GIORNO 2",x:18.74,y:62.18,w:3.60,h:4.80},
   {n:"MESE 2",  x:21.61,y:62.18,w:3.60,h:4.80},
   {n:"ANNO 2",  x:25.48,y:62.18,w:8.46,h:4.80},
@@ -249,15 +252,15 @@ const RETRO=[
   {n:"FIRMA DELL'ADDETTO",x:41.22,y:86.28,w:44.62,h:6.20},
 ];
 const SIDES={fronte:[CODICE,...FRONT],retro:RETRO};
-/* righe di date: nell'export carattere e baseline comuni */
 const DATE_ROWS=[["Data - Giorno","Data - Mese","Data Anno"],["GIORNO 2","MESE 2","ANNO 2"]];
 const DATESET=new Set(DATE_ROWS.flat());
 const REF=900;
-const centrato=n=>/firma/i.test(n)||n==="Codice dell'invio"; // firme + codice invio centrati, resto a sinistra
+const centrato=n=>/firma/i.test(n)||n==="Codice dell'invio";
 const RIGHE=["Destinazione - riga 1","riga 2","riga 3","riga 4","riga 5","riga 6"];
 
-/* ============ stato (solo in memoria, nessun salvataggio) ============ */
+/* ============ stato (solo in memoria) ============ */
 const VALS={},CHECKS={},REG={};
+const BARCODE={url:"",img:null,loaded:null};
 const SAFE={fronte:false,retro:false},MAN={fronte:false,retro:false};
 let SRC="",imgSide=null,needList=[],pendingExport=false;
 
@@ -271,7 +274,7 @@ function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),3600);}
 function updateName(){$("#fname").textContent=fname();}
 
-/* ============ archivio SOLO immagini (necessario per export automatico) ============ */
+/* ============ archivio solo immagini ============ */
 const IDB={db:null,
   open(){return new Promise(res=>{
     if(this.db)return res(this.db);
@@ -290,14 +293,14 @@ const IDB={db:null,
       rq.onsuccess=()=>res(rq.result||null);rq.onerror=()=>res(null);}catch(e){res(null);}});}
 };
 
-/* ============ costruzione campi (fissi) ============ */
+/* ============ costruzione campi ============ */
 function applyPos(wrap,f){wrap.style.left=f.x+"%";wrap.style.top=f.y+"%";wrap.style.width=f.w+"%";wrap.style.height=f.h+"%";}
 
 function buildSide(side){
   const ov=$("#ov-"+side);ov.innerHTML="";
   SIDES[side].forEach(f=>{
     const wrap=document.createElement("div");
-    wrap.className="f"+(f.type==="spunta"?" ck":"");
+    wrap.className="f"+(f.type==="spunta"?" ck":"")+(f.type==="bitmap"?" bar":"");
     applyPos(wrap,f);
 
     if(f.type==="spunta"){
@@ -305,6 +308,12 @@ function buildSide(side){
       wrap.title=f.n+" — clic per spuntare";
       if(CHECKS[f.n])wrap.classList.add("on");
       wrap.addEventListener("click",()=>{CHECKS[f.n]=!CHECKS[f.n];wrap.classList.toggle("on",CHECKS[f.n]);});
+    }else if(f.type==="bitmap"){
+      const im=document.createElement("img");
+      im.alt="";
+      if(BARCODE.url)im.src=BARCODE.url;
+      wrap.appendChild(im);
+      REG[f.n]={img:im,wrap};
     }else{
       const inp=document.createElement("input");
       inp.className=centrato(f.n)?"center":"left";
@@ -326,14 +335,24 @@ function setVal(n,v){
     if(v){r.wrap.classList.remove("flash");void r.wrap.offsetWidth;r.wrap.classList.add("flash");}}
   updateName();
 }
-/* ogni importazione (o Svuota) riparte da zero */
 function clearAll(){
   Object.keys(VALS).forEach(k=>delete VALS[k]);
   Object.keys(CHECKS).forEach(k=>delete CHECKS[k]);
+  BARCODE.url="";BARCODE.img=null;BARCODE.loaded=null;
   rebuildAll();updateName();
 }
+function setBarcode(cv){
+  if(!cv){BARCODE.url="";BARCODE.img=null;BARCODE.loaded=null;}
+  else{
+    BARCODE.url=cv.toDataURL("image/png");
+    BARCODE.img=new Image();
+    BARCODE.loaded=new Promise(res=>{BARCODE.img.onload=res;BARCODE.img.onerror=res;BARCODE.img.src=BARCODE.url;});
+  }
+  const r=REG["BAR"];
+  if(r&&r.img){if(BARCODE.url)r.img.src=BARCODE.url;else r.img.removeAttribute("src");}
+}
 
-/* ============ immagini ============ */
+/* ============ immagini fronte/retro ============ */
 function setImage(side,src,label,safe){
   const img=$("#img-"+side);
   img.onload=()=>{
@@ -400,9 +419,9 @@ const dateRe=/\b\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4}\b/;
 const dateM=/(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/;
 const norm=s=>s.replace(/\s+/g,"");
 
-async function parsePDF(file){
+async function parsePDF(buf){
   if(!window.pdfjsLib)throw new Error("libreria PDF non caricata (serve internet al primo avvio)");
-  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
   const pages=[];
   for(let p=1;p<=Math.min(pdf.numPages,2);p++){
     const tc=await (await pdf.getPage(p)).getTextContent();
@@ -416,7 +435,7 @@ async function parsePDF(file){
     pages.push(rows.map(r=>r.its.sort((a,b)=>a.x-b.x).map(i=>i.s.trim())
       .join(" ").replace(/\s+/g," ").trim()).filter(Boolean));
   }
-  return pages;
+  return {pages,pdf};
 }
 function splitCap(lines){
   const out=[];
@@ -466,6 +485,97 @@ function fillFrom(pages){
   return done;
 }
 
+/* ============ estrazione codice bitmap dal PDF ============ */
+function imgObjToCanvas(img){
+  try{
+    const cv=document.createElement("canvas");
+    if(img.bitmap){
+      cv.width=img.bitmap.width;cv.height=img.bitmap.height;
+      cv.getContext("2d").drawImage(img.bitmap,0,0);
+      return cv;
+    }
+    const w=img.width,h=img.height,d=img.data;
+    if(!w||!h||!d)return null;
+    cv.width=w;cv.height=h;
+    const ctx=cv.getContext("2d");
+    const id=ctx.createImageData(w,h);
+    const kind=img.kind||(d.length===w*h*4?3:(d.length===w*h*3?2:1));
+    if(kind===3){id.data.set(d);}
+    else if(kind===2){
+      for(let i=0,j=0;i<d.length;i+=3,j+=4){
+        id.data[j]=d[i];id.data[j+1]=d[i+1];id.data[j+2]=d[i+2];id.data[j+3]=255;
+      }
+    }else{
+      const rowLen=Math.ceil(w/8);
+      if(d.length>=rowLen*h){
+        for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+          const bit=(d[y*rowLen+(x>>3)]>>(7-(x&7)))&1;
+          const v=bit?0:255,j=(y*w+x)*4;
+          id.data[j]=id.data[j+1]=id.data[j+2]=v;id.data[j+3]=255;
+        }
+      }else{
+        for(let i=0,j=0;i<d.length&&j<id.data.length;i++,j+=4){
+          const v=d[i];id.data[j]=id.data[j+1]=id.data[j+2]=v;id.data[j+3]=255;
+        }
+      }
+    }
+    ctx.putImageData(id,0,0);
+    return cv;
+  }catch(e){return null;}
+}
+function ensureWhiteBg(cv){
+  const ctx=cv.getContext("2d");
+  const d=ctx.getImageData(0,0,cv.width,cv.height);
+  const px=d.data;let sum=0,n=0;
+  for(let i=0;i<px.length;i+=64){sum+=(px[i]+px[i+1]+px[i+2])/3;n++;}
+  if(n&&sum/n<120){
+    for(let i=0;i<px.length;i+=4){px[i]=255-px[i];px[i+1]=255-px[i+1];px[i+2]=255-px[i+2];}
+    ctx.putImageData(d,0,0);
+  }
+}
+function bwScore(cv){
+  const ctx=cv.getContext("2d");
+  const d=ctx.getImageData(0,0,cv.width,cv.height).data;
+  let bw=0,n=0;
+  for(let i=0;i<d.length;i+=16){
+    const r=d[i],g=d[i+1],b=d[i+2];
+    if((r>235&&g>235&&b>235)||(r<50&&g<50&&b<50))bw++;
+    n++;
+  }
+  return n?bw/n:0;
+}
+const withTimeout=(p,ms)=>Promise.race([p,new Promise(res=>setTimeout(()=>res(null),ms))]);
+
+async function findBarcode(pdf){
+  const OPS=pdfjsLib.OPS;
+  const cands=[];
+  for(let p=1;p<=Math.min(pdf.numPages,2);p++){
+    const page=await pdf.getPage(p);
+    const opList=await page.getOperatorList();
+    for(let i=0;i<opList.fnArray.length;i++){
+      const fn=opList.fnArray[i];
+      if(fn!==OPS.paintImageXObject&&fn!==OPS.paintImageXObjectRepeat&&fn!==OPS.paintInlineImageXObject)continue;
+      try{
+        let img=null;
+        if(fn===OPS.paintInlineImageXObject)img=opList.argsArray[i][0];
+        else{
+          const name=opList.argsArray[i][0];
+          img=await withTimeout(new Promise(res=>{try{page.objs.get(name,res);}catch(e){res(null);}}),3000);
+        }
+        if(!img)continue;
+        const cv=imgObjToCanvas(img);
+        if(!cv||cv.width<40||cv.height<40)continue;
+        if(cv.width*cv.height>1500000)continue;   /* scarta scansioni a pagina intera */
+        ensureWhiteBg(cv);
+        cands.push({cv,score:bwScore(cv),area:cv.width*cv.height});
+      }catch(e){}
+    }
+  }
+  if(!cands.length)return null;
+  cands.sort((a,b)=>b.score-a.score||b.area-a.area);
+  return cands[0].cv;
+}
+
 /* ============ modal / import ============ */
 const modal=$("#modal"),mDrop=$("#mDrop"),mStatus=$("#mStatus"),mSkip=$("#mSkip");
 function closeModal(){modal.classList.remove("show");
@@ -487,10 +597,15 @@ async function handlePdf(file){
   mStatus.innerHTML='<span class="spin"></span>estrazione in corso…';
   $("#mDumpWrap").hidden=true;
   try{
-    const pages=await parsePDF(file);
+    const buf=await file.arrayBuffer();
+    const {pages,pdf}=await parsePDF(buf);
     if(!pages.flat().length)throw new Error("nessun testo trovato nel PDF");
-    clearAll();                       /* si riparte sempre da zero */
+    clearAll();                        /* si riparte sempre da zero */
     const done=fillFrom(pages);
+    const bar=await findBarcode(pdf);
+    setBarcode(bar);
+    if(bar)done.push("codice bitmap");
+    else console.warn("Nessun codice bitmap trovato nel PDF");
     SRC=file.name;
     $("#srcName").textContent=file.name;$("#src").classList.add("ok");
     mStatus.className="m-status ok";
@@ -499,7 +614,7 @@ async function handlePdf(file){
     $("#mDumpWrap").hidden=false;
     console.log("Righe estratte:",pages);
     mSkip.textContent="Continua →";mSkip.classList.add("primlink");
-    toast("Dati estratti da "+file.name);
+    toast(bar?"Dati estratti da "+file.name:"Dati estratti — codice bitmap non trovato nel PDF");
   }catch(err){
     mStatus.className="m-status err";
     mStatus.textContent="✕ "+(err.message||"errore di lettura");
@@ -542,18 +657,27 @@ function drawDateRows(ctx,side,cw,ch,k){
     });
   });
 }
+function drawBitmaps(ctx,side,cw,ch){
+  SIDES[side].forEach(f=>{
+    if(f.type!=="bitmap"||!BARCODE.img)return;
+    ctx.save();
+    ctx.globalCompositeOperation="multiply";      /* moltiplica: il bianco sparisce */
+    ctx.drawImage(BARCODE.img,f.x/100*cw,f.y/100*ch,f.w/100*cw,f.h/100*ch);
+    ctx.restore();
+  });
+}
 function renderSide(side){
   const img=$("#img-"+side);
   if(!sheetVisible(side)||!img.naturalWidth)return null;
   const natW=img.naturalWidth,natH=img.naturalHeight;
-  const sc=Math.min(200/96,4200/natW);              /* ~200 dpi, testi nitidi */
+  const sc=Math.min(200/96,4200/natW);
   const cw=Math.round(natW*sc),ch=Math.round(natH*sc);
   const cv=document.createElement("canvas");cv.width=cw;cv.height=ch;
   const ctx=cv.getContext("2d");
   ctx.drawImage(img,0,0,cw,ch);
   const k=cw/REF;
   SIDES[side].forEach(f=>{
-    if(DATESET.has(f.n))return;
+    if(DATESET.has(f.n)||f.type==="bitmap")return;
     if(f.type==="spunta"){if(CHECKS[f.n])drawCheck(ctx,f,cw,ch);return;}
     const v=(VALS[f.n]||"").trim();if(!v)return;
     const bx=f.x/100*cw,by=f.y/100*ch,bw=f.w/100*cw,bh=f.h/100*ch;
@@ -566,6 +690,7 @@ function renderSide(side){
     else{ctx.textAlign="left";ctx.fillText(v,bx+4*k,y);}
   });
   drawDateRows(ctx,side,cw,ch,k);
+  drawBitmaps(ctx,side,cw,ch);
   return {cv,w:natW,h:natH};
 }
 async function doExport(){
@@ -573,6 +698,7 @@ async function doExport(){
   try{
     await document.fonts.load('500 16px "IBM Plex Sans"');
     await document.fonts.ready;
+    if(BARCODE.loaded)await BARCODE.loaded;
     const p1=renderSide("fronte"),p2=renderSide("retro");
     if(!p1&&!p2){toast("Carica prima le immagini fronte/retro");return;}
     if(typeof window.jspdf==="undefined")throw new Error("libreria jsPDF non caricata");
