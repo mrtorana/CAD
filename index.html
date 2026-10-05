@@ -91,7 +91,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 
 /* bitmap del codice (BAR) — moltiplica, non interattivo */
 .f.bar{pointer-events:none}
-.f.bar img{display:block;width:100%;height:100%;object-fit:fill;mix-blend-mode:multiply}
+.f.bar img{display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
 
 /* spunte — nero, piccole */
 .f.ck{cursor:pointer}
@@ -660,9 +660,14 @@ function drawDateRows(ctx,side,cw,ch,k){
 function drawBitmaps(ctx,side,cw,ch){
   SIDES[side].forEach(f=>{
     if(f.type!=="bitmap"||!BARCODE.img)return;
+    const bx=f.x/100*cw, by=f.y/100*ch, bw=f.w/100*cw, bh=f.h/100*ch;
+    const iw=BARCODE.img.naturalWidth, ih=BARCODE.img.naturalHeight;
+    const s=Math.min(bw/iw, bh/ih);          /* scala uniforme: niente stretch */
+    const dw=iw*s, dh=ih*s;
+    const dx=bx+(bw-dw)/2, dy=by+(bh-dh)/2;  /* centrato nel riquadro */
     ctx.save();
-    ctx.globalCompositeOperation="multiply";      /* moltiplica: il bianco sparisce */
-    ctx.drawImage(BARCODE.img,f.x/100*cw,f.y/100*ch,f.w/100*cw,f.h/100*ch);
+    ctx.globalCompositeOperation="multiply";
+    ctx.drawImage(BARCODE.img, dx, dy, dw, dh);
     ctx.restore();
   });
 }
