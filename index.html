@@ -72,10 +72,14 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 .ov{position:absolute;inset:0;line-height:1.4}
 
 /* slot immagine mancante */
-.slot{align-self:center;width:100%;max-width:420px;border:2px dashed #c3cdd9;border-radius:12px;background:#fff;text-align:center;padding:44px 24px;transition:.2s}
+.slot{align-self:center;width:100%;max-width:460px;border:2px dashed #c3cdd9;border-radius:12px;background:#fff;text-align:center;padding:38px 24px;transition:.2s}
 .slot.over{border-color:var(--blue);background:var(--blue-soft);transform:scale(1.01)}
 .slot .big{font:800 15px "Sora";margin:0 0 4px}
-.slot p{margin:0 0 16px;color:var(--mut);font-size:13px}
+.slot p{margin:0 0 14px;color:var(--mut);font-size:13px}
+.slot .tried{font:400 10.5px/1.8 "IBM Plex Mono",monospace;color:var(--faint);word-break:break-all;
+  background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:0 0 14px}
+.slot .retry{display:inline-block;margin-top:12px;background:none;border:0;color:var(--blue);
+  font:600 12.5px "IBM Plex Sans";text-decoration:underline;text-underline-offset:3px}
 
 /* ── campi ── */
 .f{position:absolute}
@@ -162,8 +166,10 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
     <div class="sheet-zone">
       <div class="slot" id="slot-fronte">
         <p class="big">fronte.png non trovata</p>
-        <p>Verifica che il file sia nella stessa cartella di questo HTML,<br>oppure caricalo qui sotto.</p>
-        <button class="btn prim" data-side="fronte">Carica fronte…</button>
+        <p class="tried" id="tried-fronte"></p>
+        <p>Verifica nome del file (minuscolo) e cartella,<br>poi premi "Riprova", oppure caricala qui sotto.</p>
+        <button class="btn prim" data-side="fronte">Carica fronte…</button><br>
+        <button class="retry" data-side="fronte">↺ riprova ricerca automatica</button>
       </div>
       <div class="sheet" id="sheet-fronte" hidden>
         <img id="img-fronte" alt="Fronte"><div class="ov" id="ov-fronte"></div>
@@ -178,8 +184,10 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
     <div class="sheet-zone">
       <div class="slot" id="slot-retro">
         <p class="big">retro.png non trovata</p>
-        <p>Verifica che il file sia nella stessa cartella di questo HTML,<br>oppure caricalo qui sotto.</p>
-        <button class="btn prim" data-side="retro">Carica retro…</button>
+        <p class="tried" id="tried-retro"></p>
+        <p>Verifica nome del file (minuscolo) e cartella,<br>poi premi "Riprova", oppure caricala qui sotto.</p>
+        <button class="btn prim" data-side="retro">Carica retro…</button><br>
+        <button class="retry" data-side="retro">↺ riprova ricerca automatica</button>
       </div>
       <div class="sheet" id="sheet-retro" hidden>
         <img id="img-retro" alt="Retro"><div class="ov" id="ov-retro"></div>
@@ -219,6 +227,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 <script>
 "use strict";
 /* ============ campi — posizioni definitive (posizioni.csv) ============ */
+const FONT_PX=13;   /* dimensione testo: unica fonte per video e PDF */
 const CODICE={n:"Codice dell'invio",x:18.02,y:24.70,w:46.58,h:7.20};
 const FRONT=[
   {n:"Destinazione - riga 1",x:37.06,y:52.05,w:38.13,h:6.76},
@@ -245,7 +254,6 @@ const RETRO=[
   {n:"FIRMA DELL'ADDETTO",x:41.22,y:86.28,w:44.62,h:6.20},
 ];
 const SIDES={fronte:[CODICE,...FRONT],retro:RETRO};
-const REF=900;
 const firma=n=>/firma/i.test(n);
 const centrato=n=>firma(n)||n==="Codice dell'invio";
 const RIGHE=["Destinazione - riga 1","riga 2","riga 3","riga 4","riga 5","riga 6"];
@@ -274,7 +282,6 @@ function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),3600);}
 function updateName(){$("#fname").textContent=fname();}
 
-/* azzera tutti i campi (usato a ogni nuova importazione PDF) */
 function clearAllFields(){
   Object.keys(VALS).forEach(k=>delete VALS[k]);
   Object.keys(CHECKS).forEach(k=>delete CHECKS[k]);
@@ -360,28 +367,49 @@ function readImg(side,file){
   rd.onload=()=>{setImage(side,rd.result,file.name,true);IDB.put("img-"+side,rd.result);};
   rd.readAsDataURL(file);
 }
-async function initImages(){
-  for(const side of ["fronte","retro"]){
-    let loaded=false;
-    /* 1) caricamento diretto dalla stessa cartella (GitHub Pages / http) */
-    try{
-      const r=await fetch(side+".png");
-      if(r.ok){
-        const du=await blobToDataURL(await r.blob());
-        setImage(side,du,side+".png",true);
-        IDB.put("img-"+side,du);
-        loaded=true;
-      }
-    }catch(e){}
-    /* 2) riserva: copia memorizzata in precedenza */
-    if(!loaded){
-      const cached=await IDB.get("img-"+side);
-      if(cached){setImage(side,cached,side+".png (memorizzata)",true);loaded=true;}
-    }
-    /* 3) solo anteprima locale (file://): l'export chiederà una conferma una tantum */
-    if(!loaded)setImage(side,side+".png",side+".png",false);
-  }
+/* cerca il file con più varianti di nome (GitHub è sensibile alle maiuscole) */
+function candidates(side){
+  const cap=side.charAt(0).toUpperCase()+side.slice(1);
+  return [`${side}.png`,`${cap}.png`,`${side.toUpperCase()}.png`,
+          `${side}.PNG`,`${side}.jpg`,`${side}.jpeg`];
 }
+async function tryFetchCandidates(side){
+  for(const c of candidates(side)){
+    try{
+      const r=await fetch(c,{cache:"no-cache"});
+      if(!r.ok)continue;
+      const b=await r.blob();
+      if(!b.type.startsWith("image"))continue;   /* scarto eventuali pagine 404 */
+      const du=await blobToDataURL(b);
+      setImage(side,du,c,true);
+      IDB.put("img-"+side,du);
+      return c;
+    }catch(e){}
+  }
+  return null;
+}
+function showTried(side){
+  const base=new URL(".",location.href).href;
+  $("#tried-"+side).innerHTML="Ho cercato:<br>"+
+    candidates(side).map(c=>"· "+base+c).join("<br>");
+}
+async function loadSide(side){
+  const found=await tryFetchCandidates(side);
+  if(found)return true;
+  const cached=await IDB.get("img-"+side);
+  if(cached){setImage(side,cached,side+".png (memorizzata)",true);return true;}
+  setImage(side,side+".png",side+".png",false);  /* anteprima locale; slot se 404 */
+  showTried(side);
+  return false;
+}
+async function initImages(){
+  for(const side of ["fronte","retro"])await loadSide(side);
+}
+document.querySelectorAll(".retry").forEach(b=>b.addEventListener("click",async()=>{
+  const side=b.dataset.side;
+  toast("Ricerca di "+side+".png in corso…");
+  if(!await loadSide(side))toast(side+".png ancora non trovata");
+}));
 
 document.querySelectorAll(".slot").forEach(sl=>{
   const side=sl.id.split("-")[1];
@@ -531,7 +559,7 @@ $("#btnClear").addEventListener("click",()=>{
   clearAllFields();toast("Campi svuotati");
 });
 
-/* ============ export PDF ============ */
+/* ============ export PDF (WYSIWYG) ============ */
 const sheetVisible=s=>!$("#sheet-"+s).hidden;
 function drawCheck(ctx,p,cw,ch){
   const bx=p.x/100*cw,by=p.y/100*ch,bw=p.w/100*cw,bh=p.h/100*ch;
@@ -546,23 +574,26 @@ function drawCheck(ctx,p,cw,ch){
 function renderSide(side){
   const img=$("#img-"+side);
   if(!sheetVisible(side)||!img.naturalWidth)return null;
-  const natW=img.naturalWidth,natH=img.naturalHeight,sc=Math.min(1,2400/natW);
+  const natW=img.naturalWidth,natH=img.naturalHeight;
+  const dispW=img.getBoundingClientRect().width||1;     /* larghezza reale a schermo */
+  const sc=Math.min(1,2400/natW);
   const cw=Math.round(natW*sc),ch=Math.round(natH*sc);
   const cv=document.createElement("canvas");cv.width=cw;cv.height=ch;
   const ctx=cv.getContext("2d");
   ctx.drawImage(img,0,0,cw,ch);
-  const k=cw/REF;
+  /* scala esatta tra ciò che si vede e il PDF → nessuna differenza */
+  const k=cw/dispW;
   SIDES[side].forEach(f=>{
     if(f.type==="spunta"){if(CHECKS[f.n])drawCheck(ctx,f,cw,ch);return;}
     const v=(VALS[f.n]||"").trim();if(!v)return;
     const bx=f.x/100*cw,by=f.y/100*ch,bw=f.w/100*cw,bh=f.h/100*ch;
-    let fs=13*k;fs=Math.min(fs,bh*0.82);
+    let fs=FONT_PX*k;fs=Math.min(fs,bh*0.95);
     ctx.font=`500 ${fs}px "IBM Plex Sans",sans-serif`;
     ctx.fillStyle="#17223a";
-    ctx.textBaseline="middle";
-    const y=by+bh/2+fs*0.05;
-    if(centrato(f.n)){ctx.textAlign="center";ctx.fillText(v,bx+bw/2,y);}
-    else{ctx.textAlign="left";ctx.fillText(v,bx+4*k,y);}
+    ctx.textBaseline="alphabetic";
+    const yBase=by+bh/2+fs*0.36;      /* centratura verticale come nei box a video */
+    if(centrato(f.n)){ctx.textAlign="center";ctx.fillText(v,bx+bw/2,yBase);}
+    else{ctx.textAlign="left";ctx.fillText(v,bx+4*k,yBase);}   /* 4px di padding scalati */
   });
   return cv;
 }
