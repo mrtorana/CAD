@@ -89,7 +89,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 @keyframes flash{0%{background:rgba(37,99,235,.25)}100%{background:transparent}}
 .f.flash input{animation:flash 1.3s ease-out}
 
-/* bitmap del codice (BAR) — moltiplica, non interattivo */
+/* bitmap del codice (BAR) — moltiplica, proporzioni corrette, non interattivo */
 .f.bar{pointer-events:none}
 .f.bar img{display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
 
@@ -150,7 +150,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 <header>
   <div class="brand">
     <div class="logo"><i class="l1"></i><i class="l2"></i></div>
-    <div><h1>Compila Modulo</h1><small>pdf → fronte/retro → export · v7</small></div>
+    <div><h1>Compila Modulo</h1><small>pdf → fronte/retro → export · v8</small></div>
   </div>
   <div class="spacer"></div>
   <div class="src" id="src"><span class="dot"></span><b id="srcName">nessun PDF importato</b></div>
@@ -194,7 +194,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 </main>
 
 <div class="statusbar">
-  <span class="ver">v7</span>
+  <span class="ver">v8</span>
   <span class="hint">✎ compila i riquadri · ✓ clic sulle caselle · il codice bitmap viene estratto dal PDF e fuso in moltiplica</span>
   <span class="fname">il PDF verrà salvato come <b id="fname">CAD.pdf</b></span>
 </div>
@@ -242,7 +242,7 @@ const RETRO=[
   {n:"Destinatario",x:22.91,y:34.87,w:32.57,h:6.06},
   {n:"Indirizzo",x:22.40,y:41.07,w:59.57,h:6.48},
   {n:"CAP / Località / Provincia",x:27.54,y:47.83,w:53.08,h:6.34},
-  {n:"BAR",x:63.20,y:48.53,w:8.01,h:6.48,type:"bitmap"},   /* codice bitmap dal PDF, fuso in moltiplica */
+  {n:"BAR",x:63.20,y:48.53,w:8.01,h:6.48,type:"bitmap"},
   {n:"GIORNO 2",x:18.74,y:62.18,w:3.60,h:4.80},
   {n:"MESE 2",  x:21.61,y:62.18,w:3.60,h:4.80},
   {n:"ANNO 2",  x:25.48,y:62.18,w:8.46,h:4.80},
@@ -252,13 +252,15 @@ const RETRO=[
   {n:"FIRMA DELL'ADDETTO",x:41.22,y:86.28,w:44.62,h:6.20},
 ];
 const SIDES={fronte:[CODICE,...FRONT],retro:RETRO};
+const BAR_FIELD=RETRO.find(f=>f.type==="bitmap");
 const DATE_ROWS=[["Data - Giorno","Data - Mese","Data Anno"],["GIORNO 2","MESE 2","ANNO 2"]];
 const DATESET=new Set(DATE_ROWS.flat());
 const REF=900;
-const centrato=n=>/firma/i.test(n)||n==="Codice dell'invio";
+const firma=n=>/firma/i.test(n);
+const centrato=n=>firma(n)||n==="Codice dell'invio";
 const RIGHE=["Destinazione - riga 1","riga 2","riga 3","riga 4","riga 5","riga 6"];
 
-/* ============ stato (solo in memoria) ============ */
+/* ============ stato (solo in memoria, nessuna persistenza dei dati) ============ */
 const VALS={},CHECKS={},REG={};
 const BARCODE={url:"",img:null,loaded:null};
 const SAFE={fronte:false,retro:false},MAN={fronte:false,retro:false};
@@ -274,7 +276,7 @@ function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),3600);}
 function updateName(){$("#fname").textContent=fname();}
 
-/* ============ archivio solo immagini ============ */
+/* ============ archivio: solo immagini (necessario per export automatico) ============ */
 const IDB={db:null,
   open(){return new Promise(res=>{
     if(this.db)return res(this.db);
@@ -293,7 +295,7 @@ const IDB={db:null,
       rq.onsuccess=()=>res(rq.result||null);rq.onerror=()=>res(null);}catch(e){res(null);}});}
 };
 
-/* ============ costruzione campi ============ */
+/* ============ costruzione campi (fissi) ============ */
 function applyPos(wrap,f){wrap.style.left=f.x+"%";wrap.style.top=f.y+"%";wrap.style.width=f.w+"%";wrap.style.height=f.h+"%";}
 
 function buildSide(side){
@@ -341,12 +343,32 @@ function clearAll(){
   BARCODE.url="";BARCODE.img=null;BARCODE.loaded=null;
   rebuildAll();updateName();
 }
+
+/* ============ barcode: auto-fit del riquadro al rapporto reale ============ */
+function fitBarBox(){
+  if(!BARCODE.img||!BARCODE.img.naturalWidth)return;
+  const bg=$("#img-retro");
+  if(!bg.naturalWidth)return;
+  const ratio=BARCODE.img.naturalWidth/BARCODE.img.naturalHeight;
+  const cx=BAR_FIELD.x+BAR_FIELD.w/2, cy=BAR_FIELD.y+BAR_FIELD.h/2;
+  let wPct=BAR_FIELD.w;
+  let hPct=(wPct/100*bg.naturalWidth/ratio)/bg.naturalHeight*100;
+  if(hPct>20){hPct=20;wPct=(hPct/100*bg.naturalHeight*ratio)/bg.naturalWidth*100;}
+  BAR_FIELD.w=wPct;BAR_FIELD.h=hPct;
+  BAR_FIELD.x=clamp(cx-wPct/2,0,100-wPct);
+  BAR_FIELD.y=clamp(cy-hPct/2,0,100-hPct);
+  const reg=REG["BAR"];
+  if(reg&&reg.wrap)applyPos(reg.wrap,BAR_FIELD);
+  console.log("BAR: immagine",BARCODE.img.naturalWidth+"×"+BARCODE.img.naturalHeight,
+              "→ box",wPct.toFixed(2)+"×"+hPct.toFixed(2)+"%");
+}
 function setBarcode(cv){
   if(!cv){BARCODE.url="";BARCODE.img=null;BARCODE.loaded=null;}
   else{
     BARCODE.url=cv.toDataURL("image/png");
     BARCODE.img=new Image();
     BARCODE.loaded=new Promise(res=>{BARCODE.img.onload=res;BARCODE.img.onerror=res;BARCODE.img.src=BARCODE.url;});
+    BARCODE.loaded.then(fitBarBox);
   }
   const r=REG["BAR"];
   if(r&&r.img){if(BARCODE.url)r.img.src=BARCODE.url;else r.img.removeAttribute("src");}
@@ -359,6 +381,7 @@ function setImage(side,src,label,safe){
     $("#slot-"+side).hidden=true;$("#sheet-"+side).hidden=false;
     $("#info-"+side).textContent=(label||side+".png")+" · "+img.naturalWidth+"×"+img.naturalHeight+" px";
     SAFE[side]=!!safe;$("#warn-"+side).hidden=!!safe;
+    if(side==="retro")fitBarBox();
     maybeContinueExport();
   };
   img.onerror=()=>{$("#slot-"+side).hidden=false;$("#sheet-"+side).hidden=true;SAFE[side]=false;};
@@ -565,7 +588,7 @@ async function findBarcode(pdf){
         if(!img)continue;
         const cv=imgObjToCanvas(img);
         if(!cv||cv.width<40||cv.height<40)continue;
-        if(cv.width*cv.height>1500000)continue;   /* scarta scansioni a pagina intera */
+        if(cv.width*cv.height>1500000)continue;
         ensureWhiteBg(cv);
         cands.push({cv,score:bwScore(cv),area:cv.width*cv.height});
       }catch(e){}
@@ -600,7 +623,7 @@ async function handlePdf(file){
     const buf=await file.arrayBuffer();
     const {pages,pdf}=await parsePDF(buf);
     if(!pages.flat().length)throw new Error("nessun testo trovato nel PDF");
-    clearAll();                        /* si riparte sempre da zero */
+    clearAll();
     const done=fillFrom(pages);
     const bar=await findBarcode(pdf);
     setBarcode(bar);
@@ -659,15 +682,15 @@ function drawDateRows(ctx,side,cw,ch,k){
 }
 function drawBitmaps(ctx,side,cw,ch){
   SIDES[side].forEach(f=>{
-    if(f.type!=="bitmap"||!BARCODE.img)return;
-    const bx=f.x/100*cw, by=f.y/100*ch, bw=f.w/100*cw, bh=f.h/100*ch;
-    const iw=BARCODE.img.naturalWidth, ih=BARCODE.img.naturalHeight;
-    const s=Math.min(bw/iw, bh/ih);          /* scala uniforme: niente stretch */
-    const dw=iw*s, dh=ih*s;
-    const dx=bx+(bw-dw)/2, dy=by+(bh-dh)/2;  /* centrato nel riquadro */
+    if(f.type!=="bitmap"||!BARCODE.img||!BARCODE.img.naturalWidth)return;
+    const bx=f.x/100*cw,by=f.y/100*ch,bw=f.w/100*cw,bh=f.h/100*ch;
+    const iw=BARCODE.img.naturalWidth,ih=BARCODE.img.naturalHeight;
+    const s=Math.min(bw/iw,bh/ih);
+    const dw=iw*s,dh=ih*s;
+    const dx=bx+(bw-dw)/2,dy=by+(bh-dh)/2;
     ctx.save();
     ctx.globalCompositeOperation="multiply";
-    ctx.drawImage(BARCODE.img, dx, dy, dw, dh);
+    ctx.drawImage(BARCODE.img,dx,dy,dw,dh);
     ctx.restore();
   });
 }
