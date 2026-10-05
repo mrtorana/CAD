@@ -104,10 +104,10 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 .hd-s{bottom:-6px;left:50%;margin-left:-6px;cursor:ns-resize}
 .hd-se{right:-6px;bottom:-6px;cursor:nwse-resize}
 
-/* spunte — nero, leggermente più piccole */
+/* spunte — nero, più piccole */
 .f.ck{cursor:pointer}
-.f.ck svg{position:absolute;inset:9%;width:82%;height:82%;overflow:visible}
-.f.ck path{fill:none;stroke:var(--ink2);stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;
+.f.ck svg{position:absolute;inset:12%;width:76%;height:76%;overflow:visible}
+.f.ck path{fill:none;stroke:var(--ink2);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;
   stroke-dasharray:26;stroke-dashoffset:26;transition:stroke-dashoffset .28s ease .04s}
 .f.ck.on path{stroke-dashoffset:0}
 .f.ck:hover{outline:1px dashed rgba(37,99,235,.55);outline-offset:2px}
@@ -147,6 +147,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
   font:400 11px "IBM Plex Mono",monospace;color:var(--mut);flex-wrap:wrap}
 .linkish{background:none;border:0;padding:0;color:var(--mut);font:inherit;text-decoration:underline;text-underline-offset:3px}
 .linkish:hover{color:var(--blue)}
+.ver{color:var(--blue);font-weight:500}
 .statusbar .fname{margin-left:auto;color:var(--ink)}
 .statusbar .fname b{color:var(--blue);font-weight:500}
 #chip{position:fixed;z-index:60;display:none;pointer-events:none;background:var(--ink);color:#fff;
@@ -164,7 +165,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 <header>
   <div class="brand">
     <div class="logo"><i class="l1"></i><i class="l2"></i></div>
-    <div><h1>Compila Modulo</h1><small>pdf → fronte/retro → export</small></div>
+    <div><h1>Compila Modulo</h1><small>pdf → fronte/retro → export · v5</small></div>
   </div>
   <div class="spacer"></div>
   <div class="src" id="src"><span class="dot"></span><b id="srcName">nessun PDF importato</b></div>
@@ -209,6 +210,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 </main>
 
 <div class="statusbar">
+  <span class="ver">v5</span>
   <span class="hint">⠿ trascina per spostare · quadratini ▸ larghezza/altezza · ✓ clic sulle caselle</span>
   <button class="linkish" id="btnResetPos">↺ ripristina posizioni originali</button>
   <span class="fname">il PDF verrà salvato come <b id="fname">CAD.pdf</b></span>
@@ -240,7 +242,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:2
 
 <script>
 "use strict";
-/* ============ campi — posizioni definitive, date allineate sulla stessa linea di base ============ */
+/* ============ campi — v5: date uniformate (giorno=mese, anno più largo), stessa Y/H per riga ============ */
 const CODICE={n:"Codice dell'invio",x:18.02,y:24.70,w:46.58,h:7.20};
 const FRONT=[
   {n:"Destinazione - riga 1",x:37.06,y:52.05,w:38.13,h:6.76},
@@ -252,16 +254,16 @@ const FRONT=[
 ];
 const RETRO=[
   {n:"Atto Numero",x:26.00,y:20.64,w:39.13,h:5.35},
-  /* riga data 1 — stessa Y e stessa altezza → stessa linea di base (fondo a 32.28) */
-  {n:"Data - Giorno",x:14.26,y:27.08,w:3.99,h:5.20},
-  {n:"Data - Mese",  x:17.27,y:27.08,w:3.77,h:5.20},
-  {n:"Data Anno",    x:20.41,y:27.08,w:6.46,h:5.20},
+  /* riga data 1 — Giorno e Mese identici, Anno più largo, stessa linea (fondo 32.28) */
+  {n:"Data - Giorno",x:14.26,y:27.08,w:3.90,h:5.20},
+  {n:"Data - Mese",  x:17.27,y:27.08,w:3.90,h:5.20},
+  {n:"Data Anno",    x:20.41,y:27.08,w:7.20,h:5.20},
   {n:"Destinatario",x:22.91,y:34.87,w:32.57,h:6.06},
   {n:"Indirizzo",x:22.40,y:41.07,w:59.57,h:6.48},
   {n:"CAP / Località / Provincia",x:27.54,y:47.83,w:53.08,h:6.34},
-  /* riga data 2 — stessa Y e stessa altezza (fondo a 66.98) */
-  {n:"GIORNO 2",x:18.74,y:62.18,w:3.64,h:4.80},
-  {n:"MESE 2",  x:21.61,y:62.18,w:3.57,h:4.80},
+  /* riga data 2 — stessa logica (fondo 66.98) */
+  {n:"GIORNO 2",x:18.74,y:62.18,w:3.60,h:4.80},
+  {n:"MESE 2",  x:21.61,y:62.18,w:3.60,h:4.80},
   {n:"ANNO 2",  x:25.48,y:62.18,w:8.46,h:4.80},
   {n:"Spunta - Immessa",x:15.33,y:81.21,w:2.49,h:4.37,type:"spunta"},
   {n:"SPUNTA - AFFISSA",x:15.33,y:86.99,w:2.71,h:4.51,type:"spunta"},
@@ -269,6 +271,9 @@ const RETRO=[
   {n:"FIRMA DELL'ADDETTO",x:41.22,y:86.28,w:44.62,h:6.20},
 ];
 const SIDES={fronte:[CODICE,...FRONT],retro:RETRO};
+/* righe di date: nell'export vengono scritte con carattere e baseline comuni */
+const DATE_ROWS=[["Data - Giorno","Data - Mese","Data Anno"],["GIORNO 2","MESE 2","ANNO 2"]];
+const DATESET=new Set(DATE_ROWS.flat());
 const REF=900;
 const firma=n=>/firma/i.test(n);
 const centrato=n=>firma(n)||n==="Codice dell'invio";
@@ -286,13 +291,14 @@ const san=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase
 const fname=()=>["CAD",san(VALS["Atto Numero"]),san(VALS["Destinatario"])].filter(Boolean).join("_")+".pdf";
 const getPos=f=>POSOV[f.n]||f;
 
-function save(){try{localStorage.setItem("compilamodulo.v4",JSON.stringify({v:VALS,c:CHECKS,pov:POSOV,src:SRC}));}catch(e){}}
+function save(){try{localStorage.setItem("compilamodulo.v5",JSON.stringify({v:VALS,c:CHECKS,pov:POSOV,src:SRC}));}catch(e){}}
 function load(){
   let d=null;
-  try{d=JSON.parse(localStorage.getItem("compilamodulo.v4"));}catch(e){}
-  if(!d){ /* migra dai salvataggi precedenti mantenendo i dati compilati ma azzerando le posizioni */
+  try{d=JSON.parse(localStorage.getItem("compilamodulo.v5"));}catch(e){}
+  if(!d){ /* migra dai salvataggi precedenti: mantiene i dati compilati, azzera le posizioni vecchie */
     try{
-      const o=JSON.parse(localStorage.getItem("compilamodulo.v3"))
+      const o=JSON.parse(localStorage.getItem("compilamodulo.v4"))
+            ||JSON.parse(localStorage.getItem("compilamodulo.v3"))
             ||JSON.parse(localStorage.getItem("compilamodulo.v2"));
       if(o)d={v:o.v,c:o.c,pov:{},src:o.src};
     }catch(e){}
@@ -619,14 +625,32 @@ $("#btnCsv").addEventListener("click",()=>{
 const sheetVisible=s=>!$("#sheet-"+s).hidden;
 function drawCheck(ctx,p,cw,ch){
   const bx=p.x/100*cw,by=p.y/100*ch,bw=p.w/100*cw,bh=p.h/100*ch;
-  const s=0.86, cx=bx+bw/2, cy=by+bh/2;                 /* spunta leggermente più piccola */
-  const pt=(px,py)=>[cx+(px-cx)*s, cy+(py-cy)*s];
+  const s=0.74,cx=bx+bw/2,cy=by+bh/2;                  /* spunta più piccola */
+  const pt=(px,py)=>[cx+(px-cx)*s,cy+(py-cy)*s];
   const [x1,y1]=pt(bx+bw*0.12,by+bh*0.55);
   const [x2,y2]=pt(bx+bw*0.40,by+bh*0.84);
   const [x3,y3]=pt(bx+bw*0.90,by+bh*0.16);
   ctx.strokeStyle="#17223a";ctx.lineCap="round";ctx.lineJoin="round";
-  ctx.lineWidth=Math.max(2.2,bh*0.15)*s;
+  ctx.lineWidth=Math.max(2,bh*0.12);
   ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x3,y3);ctx.stroke();
+}
+/* le date di una stessa riga vengono scritte con carattere e baseline identici */
+function drawDateRows(ctx,side,cw,ch,k){
+  DATE_ROWS.forEach(names=>{
+    const items=[];
+    names.forEach(n=>{const f=SIDES[side].find(x=>x.n===n);if(f)items.push({f,p:getPos(f)});});
+    if(!items.length)return;
+    let fs=13*k;
+    items.forEach(i=>{fs=Math.min(fs,(i.p.h/100*ch)*0.82);});   /* carattere unico per la riga */
+    ctx.font=`600 ${fs}px "IBM Plex Sans",sans-serif`;
+    ctx.fillStyle="#17223a";ctx.textAlign="left";ctx.textBaseline="alphabetic";
+    const cy=Math.max(...items.map(i=>(i.p.y+i.p.h/2)/100*ch)); /* centro comune = baseline comune */
+    const baseline=cy+fs*0.36;
+    items.forEach(({f,p})=>{
+      const v=(VALS[f.n]||"").trim();if(!v)return;
+      ctx.fillText(v,(p.x/100*cw)+4*k,baseline);
+    });
+  });
 }
 function renderSide(side){
   const img=$("#img-"+side);
@@ -638,6 +662,7 @@ function renderSide(side){
   ctx.drawImage(img,0,0,cw,ch);
   const k=cw/REF;
   SIDES[side].forEach(f=>{
+    if(DATESET.has(f.n))return;                         /* le date le gestisce drawDateRows */
     const p=getPos(f);
     if(f.type==="spunta"){if(CHECKS[f.n])drawCheck(ctx,p,cw,ch);return;}
     const v=(VALS[f.n]||"").trim();if(!v)return;
@@ -650,6 +675,7 @@ function renderSide(side){
     if(centrato(f.n)){ctx.textAlign="center";ctx.fillText(v,bx+bw/2,y);}
     else{ctx.textAlign="left";ctx.fillText(v,bx+4*k,y);}
   });
+  drawDateRows(ctx,side,cw,ch,k);
   return cv;
 }
 async function doExport(){
